@@ -10,10 +10,15 @@ See [PRD.md](PRD.md) for the full product spec and milestones.
 
 ## Status
 
-- **M0 (scaffold)** — done: auth, household + invite links, PWA shell,
-  4 tabs, settings (injury profile, members, theme, notifications, Hermes
-  agent grants), rules, CI.
-- **M1 (meds + dose engine + backfill)** — next.
+- **M0–M5 built** (all code, tests, and demo-mode verification done):
+  scaffold/auth/household · meds + dose engine + backfill · in-app
+  calendar + day ledger + export · Google Calendar integration (needs the
+  OAuth client id) · PT sessions + HEP + Progress charts · Hermes inbox
+  (see [docs/HERMES-CONTRACT.md](docs/HERMES-CONTRACT.md)).
+- **Blocked on console setup**: real Firebase config (placeholders below),
+  first deploy, on-device testing, live GCal + Hermes end-to-end checks.
+- **M6 remaining**: FCM push reminders (decision gate), photo attachments,
+  PDF export.
 
 ## One-time setup (Firebase console)
 
