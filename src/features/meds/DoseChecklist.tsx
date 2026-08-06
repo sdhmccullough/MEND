@@ -6,6 +6,7 @@ import {
   lastTakenAtForMed,
   materializeDay,
   doseTextForDate,
+  plannedSlotsFor,
   type DoseView,
 } from '../../lib/doses';
 import { currentStreak, dayAdherence } from '../../lib/adherence';
@@ -172,8 +173,10 @@ export function DoseChecklist() {
   const views = materializeDay(activeMeds, dayRecords, today, now).filter(
     (v) => v.scheduled,
   );
+  // PRN/interval meds, plus scheduled meds with no slots today (e.g. a
+  // script filled mid-day before its schedule starts) — still loggable.
   const asNeeded = Object.entries(activeMeds).filter(
-    ([, m]) => m.schedule.kind !== 'times',
+    ([, m]) => m.schedule.kind !== 'times' || plannedSlotsFor(m, today).length === 0,
   );
 
   const [optionsFor, setOptionsFor] = useState<DoseView | null>(null);
@@ -287,6 +290,7 @@ export function DoseChecklist() {
                         ? ' · due now'
                         : ` · next ${formatEpochTime(due.dueAt)}`
                       : ''}
+                    {med.schedule.kind === 'times' ? ' · not on today’s schedule' : ''}
                   </span>
                 </span>
                 <Button
