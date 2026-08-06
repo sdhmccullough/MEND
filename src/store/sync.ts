@@ -37,6 +37,7 @@ import {
   type PtSession,
 } from '../lib/schema';
 import { todayKey } from '../lib/dates';
+import { scheduledDoseId } from '../lib/doses';
 import { runMigrationIfNeeded } from './migrate';
 
 let subscriptions: Unsubscribe[] = [];
@@ -226,13 +227,23 @@ export function setMedActive(medId: string, active: boolean): Promise<void> {
   return writing(update(hhRef(`meds/${medId}`), { active }));
 }
 
-// ---- doses ------------------------------------------------------------------
-// Scheduled slots get deterministic ids so both spouses tapping the same
-// slot converge on ONE record (last write wins on the same logical dose).
-
-export function scheduledDoseId(medId: string, slot: string): string {
-  return `${medId}_${slot.replace(':', '')}`;
+/** Archive = inactive + close the schedule window today, so past slots
+ * keep counting toward adherence and future days expect nothing. */
+export function archiveMed(medId: string): Promise<void> {
+  return writing(
+    update(hhRef(`meds/${medId}`), { active: false, 'schedule/endOn': todayKey() }),
+  );
 }
+
+export function unarchiveMed(medId: string): Promise<void> {
+  return writing(
+    update(hhRef(`meds/${medId}`), { active: true, 'schedule/endOn': null }),
+  );
+}
+
+// ---- doses ------------------------------------------------------------------
+// Scheduled slots get deterministic ids (lib/doses.scheduledDoseId) so both
+// spouses tapping the same slot converge on ONE record.
 
 function doseRecord(partial: Omit<DoseRecord, 'by' | 'note'> & { note?: string }): DoseRecord {
   return { ...partial, note: partial.note ?? '', by: uid() ?? '' };

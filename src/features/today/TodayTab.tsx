@@ -1,6 +1,7 @@
 import { useStore } from '../../store/useStore';
 import { Card, SectionLabel } from '../../components/ui/Card';
 import { formatEpochTime, formatFull } from '../../lib/dates';
+import { DoseChecklist } from '../meds/DoseChecklist';
 import { PainQuickLog } from './PainQuickLog';
 
 const KIND_LABELS: Record<string, string> = {
@@ -46,12 +47,7 @@ export function TodayTab() {
     <div className="space-y-3">
       <NextAppointment />
 
-      <Card>
-        <SectionLabel>Today's meds</SectionLabel>
-        <p className="mt-1.5 text-sm text-muted">
-          The dose checklist arrives with the med tracker (next milestone).
-        </p>
-      </Card>
+      <DoseChecklist />
 
       <PainQuickLog />
     </div>
