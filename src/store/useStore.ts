@@ -61,6 +61,9 @@ interface Store {
   installAvailable: boolean;
   /** Preview-channel demo: sample data, no auth, nothing persists. */
   demoMode: boolean;
+  /** Google Calendar sync state; 'reconnect' surfaces the weekly
+   * testing-mode token expiry as a chip instead of a silent failure. */
+  gcalStatus: 'idle' | 'syncing' | 'ok' | 'reconnect';
 }
 
 export const useStore = create<Store>((set) => ({
@@ -90,6 +93,7 @@ export const useStore = create<Store>((set) => ({
   setPendingInvite: (token) => set({ pendingInvite: token }),
   installAvailable: false,
   demoMode: false,
+  gcalStatus: 'idle',
 }));
 
 /** Imperative setter for non-React modules (sync layer, auth). */

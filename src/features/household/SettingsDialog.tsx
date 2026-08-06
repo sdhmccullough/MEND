@@ -20,6 +20,7 @@ import { needsIosInstallHint, promptInstall } from '../../lib/install';
 import { doseLogCsv, downloadFile, householdExportJson } from '../../lib/export';
 import { readStore } from '../../store/useStore';
 import { todayKey } from '../../lib/dates';
+import { GcalSection } from './GcalSection';
 
 function InjurySection() {
   const injury = useStore((s) => s.injury);
@@ -290,6 +291,8 @@ export function SettingsDialog({
             />
           </div>
         </section>
+
+        <GcalSection />
 
         <section aria-label="Hermes agent" className="space-y-3">
           <SectionLabel>Hermes agent</SectionLabel>

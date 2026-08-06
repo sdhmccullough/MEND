@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { useStore, type Tab } from './store/useStore';
 import { redeemPendingInvite } from './store/auth';
+import { runGcalSync } from './store/gcalSync';
 import { toast, toastError, Toaster } from './components/ui/Toast';
 import { ConfirmDialog } from './components/ui/Dialog';
 import { SignInScreen } from './features/auth/SignInScreen';
@@ -63,6 +64,17 @@ function AppShell() {
   const migrating = useStore((s) => s.migrating);
   const demoMode = useStore((s) => s.demoMode);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Silent Google Calendar sync once per app open, as soon as the synced
+  // settings reveal a connected calendar (no-op until then).
+  const calendarConnected = useStore((s) => s.settings.gcal.calendarIds.length > 0);
+  const gcalSyncedOnce = useRef(false);
+  useEffect(() => {
+    if (calendarConnected && !gcalSyncedOnce.current) {
+      gcalSyncedOnce.current = true;
+      void runGcalSync(false);
+    }
+  }, [calendarConnected]);
 
   return (
     <Tabs.Root value={tab} onValueChange={(v) => setTab(v as Tab)}>

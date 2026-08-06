@@ -29,6 +29,7 @@ export function CalendarTab() {
   const meds = useStore((s) => s.meds);
   const doses = useStore((s) => s.doses);
   const appointments = useStore((s) => s.appointments);
+  const gcalStatus = useStore((s) => s.gcalStatus);
 
   const today = todayKey();
   const t = parseDateKey(today);
@@ -55,6 +56,16 @@ export function CalendarTab() {
 
   return (
     <div className="space-y-3">
+      {gcalStatus === 'reconnect' ? (
+        <p className="rounded-(--radius-control) border border-warn/30 bg-surface p-3 text-xs">
+          <span className="font-semibold text-warn">Calendar disconnected</span>
+          <span className="text-muted">
+            {' '}
+            — Google access expired (it renews weekly). Reconnect in Settings →
+            Google Calendar.
+          </span>
+        </p>
+      ) : null}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
           <IconButton label="Previous month" onClick={() => shift(-1)}>
