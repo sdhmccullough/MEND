@@ -6,10 +6,13 @@
 // expire every ~7 days, so silent token requests fail eventually and the
 // UI surfaces a "reconnect" chip instead of failing silently.
 //
-// TODO(sterling): replace with the real Web OAuth client id (Cloud console
-// → Credentials) once the project exists. Origin-restricted, not a secret.
+// Dedicated web OAuth client ("Mend calendar"), separate from the one
+// Firebase auto-created for sign-in. Origin-restricted, not a secret; its
+// Authorized JavaScript origins must list https://mend-467f5.web.app (and
+// http://localhost:5173 for dev).
 
-export const GCAL_CLIENT_ID = 'MEND_GCAL_CLIENT_ID.apps.googleusercontent.com';
+export const GCAL_CLIENT_ID =
+  '238537262774-6iu5qtqjt3muk4hniq3q533ohtu2459q.apps.googleusercontent.com';
 const SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
 const API = 'https://www.googleapis.com/calendar/v3';
 
