@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Storage rules can't read RTDB, so household membership is carried on the
+// ID token as a custom claim (`hid`), stamped by the setHouseholdClaim
+// Cloud Function when a member joins.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /households/{hid}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.token.hid == hid;
+      allow write: if request.auth != null
+        && request.auth.token.hid == hid
+        && (request.resource == null
+            || (request.resource.size < 10 * 1024 * 1024
+                && request.resource.contentType.matches('image/.*')));
+    }
+  }
+}

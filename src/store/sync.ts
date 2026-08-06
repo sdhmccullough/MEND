@@ -14,7 +14,14 @@ import {
   type DatabaseReference,
   type Unsubscribe,
 } from 'firebase/database';
-import { db } from '../lib/firebase';
+import {
+  deleteObject,
+  getDownloadURL,
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+} from 'firebase/storage';
+import { app, auth, db } from '../lib/firebase';
 import { patchStore, readStore, useStore } from './useStore';
 import {
   normalizeAppointment,
@@ -27,6 +34,7 @@ import {
   normalizeMed,
   normalizeMember,
   normalizeMetric,
+  normalizePhotos,
   normalizePtSession,
   normalizeSettings,
   type Appointment,
@@ -60,6 +68,7 @@ const CACHE_SLICES = [
   'appointments',
   'hep',
   'guide',
+  'photos',
   'settings',
   'inbox',
   'agents',
@@ -87,6 +96,7 @@ function hydrateFromCache(hid: string): void {
       appointments: normalizeKeyed(cached.appointments, normalizeAppointment),
       hep: normalizeHep(cached.hep),
       guide: normalizeKeyed(cached.guide, normalizeGuideSection),
+      photos: normalizePhotos(cached.photos),
       settings: normalizeSettings(cached.settings),
       inbox: normalizeKeyed(cached.inbox, normalizeInboxItem),
       agents: normalizeKeyed(cached.agents, (v) => v === true),
@@ -161,6 +171,7 @@ export async function attachHousehold(hid: string): Promise<void> {
     ],
     ['hep', (v) => patchStore({ hep: normalizeHep(v) })],
     ['guide', (v) => patchStore({ guide: normalizeKeyed(v, normalizeGuideSection) })],
+    ['photos', (v) => patchStore({ photos: normalizePhotos(v) })],
     ['settings', (v) => patchStore({ settings: normalizeSettings(v) })],
     ['inbox', (v) => patchStore({ inbox: normalizeKeyed(v, normalizeInboxItem) })],
     ['agents', (v) => patchStore({ agents: normalizeKeyed(v, (x) => x === true) })],
@@ -336,6 +347,42 @@ export function saveHep(exercises: Exercise[]): Promise<void> {
   return writing(update(hhRef('hep'), { exercises, updatedAt: serverTimestamp() }));
 }
 
+// ---- photos ---------------------------------------------------------------------
+// Bytes go to Cloud Storage (rules gated by the hid custom claim, stamped
+// by the setHouseholdClaim function); the listing record goes to RTDB.
+
+export async function uploadDayPhoto(dateKey: string, file: File): Promise<void> {
+  const hid = readStore().householdId;
+  const u = uid();
+  if (!hid || !u) throw new Error('Not attached to a household');
+  // Claims are stamped server-side; refresh the ID token so a fresh grant
+  // is visible to Storage rules (no-op after the first refresh).
+  await auth.currentUser?.getIdToken(true);
+  const key = newKey();
+  const path = `households/${hid}/photos/${dateKey}/${key}`;
+  const snap = await uploadBytes(storageRef(getStorage(app), path), file, {
+    contentType: file.type || 'image/jpeg',
+  });
+  const url = await getDownloadURL(snap.ref);
+  await writing(
+    update(hhRef(`photos/${dateKey}/${key}`), {
+      url,
+      path,
+      by: u,
+      at: serverTimestamp(),
+    }),
+  );
+}
+
+export async function deleteDayPhoto(
+  dateKey: string,
+  photoId: string,
+  path: string,
+): Promise<void> {
+  await deleteObject(storageRef(getStorage(app), path)).catch(() => undefined);
+  await writing(remove(hhRef(`photos/${dateKey}/${photoId}`)));
+}
+
 // ---- care guide ----------------------------------------------------------------
 
 export function saveGuideSection(
@@ -376,6 +423,25 @@ export function applyGcalMerge(updates: Record<string, unknown>): Promise<void> 
 
 export function saveGcalSettings(patch: Partial<GcalSettings>): Promise<void> {
   return writing(update(hhRef('settings/gcal'), patch));
+}
+
+/** One FCM token slot per (uid, device) — read only by the reminder
+ * function, never mirrored into the client store. */
+export function saveFcmToken(deviceId: string, token: string): Promise<void> {
+  const u = uid();
+  if (!u) return Promise.reject(new Error('Not signed in'));
+  return writing(
+    update(hhRef(`settings/fcmTokens/${u}_${deviceId}`), {
+      token,
+      updatedAt: serverTimestamp(),
+    }),
+  );
+}
+
+export function removeFcmToken(deviceId: string): Promise<void> {
+  const u = uid();
+  if (!u) return Promise.resolve();
+  return writing(remove(hhRef(`settings/fcmTokens/${u}_${deviceId}`)));
 }
 
 // ---- Hermes inbox / agents -------------------------------------------------------

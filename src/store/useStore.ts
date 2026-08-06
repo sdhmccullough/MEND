@@ -9,6 +9,7 @@ import type {
   Injury,
   Med,
   Member,
+  Photo,
   PtSession,
   Settings,
 } from '../lib/schema';
@@ -49,6 +50,8 @@ interface Store {
   appointments: Record<string, Appointment>;
   hep: HepTemplate;
   guide: Record<string, GuideSection>;
+  /** dateKey → photoId → listing record. */
+  photos: Record<string, Record<string, Photo>>;
   settings: Settings;
   inbox: Record<string, InboxItem>;
   agents: Record<string, boolean>;
@@ -68,6 +71,9 @@ interface Store {
   /** Google Calendar sync state; 'reconnect' surfaces the weekly
    * testing-mode token expiry as a chip instead of a silent failure. */
   gcalStatus: 'idle' | 'syncing' | 'ok' | 'reconnect';
+  /** Full-screen provider report replaces the app tree for clean printing. */
+  reportOpen: boolean;
+  setReportOpen: (open: boolean) => void;
 }
 
 export const useStore = create<Store>((set) => ({
@@ -86,6 +92,7 @@ export const useStore = create<Store>((set) => ({
   appointments: {},
   hep: DEFAULT_HEP,
   guide: {},
+  photos: {},
   settings: DEFAULT_SETTINGS,
   inbox: {},
   agents: {},
@@ -99,6 +106,8 @@ export const useStore = create<Store>((set) => ({
   installAvailable: false,
   demoMode: false,
   gcalStatus: 'idle',
+  reportOpen: false,
+  setReportOpen: (open) => set({ reportOpen: open }),
 }));
 
 /** Imperative setter for non-React modules (sync layer, auth). */

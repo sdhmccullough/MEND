@@ -147,6 +147,17 @@ export interface InboxItem {
   status: InboxStatus;
 }
 
+// ---- photos ------------------------------------------------------------------
+// Incision/swelling photos, keyed by day (shown on the calendar day view).
+// Bytes live in Cloud Storage; this is the listing record.
+
+export interface Photo {
+  url: string; // download URL captured at upload time
+  path: string; // storage path, for deletion
+  by: string;
+  at: number | null;
+}
+
 // ---- care guide --------------------------------------------------------------
 // Editable reference sections (discharge instructions, wound care, contacts)
 // so the "what did they say again?" answers live in the app, not a paper
@@ -435,6 +446,21 @@ export function normalizeInboxItem(v: unknown): InboxItem {
     receivedAt: num(o.receivedAt),
     status,
   };
+}
+
+export function normalizePhoto(v: unknown): Photo {
+  const o = rec(v);
+  return {
+    url: str(o.url),
+    path: str(o.path),
+    by: str(o.by),
+    at: numOrNull(o.at),
+  };
+}
+
+/** photos/$dateKey/$photoId — nested keyed. */
+export function normalizePhotos(v: unknown): Record<string, Record<string, Photo>> {
+  return normalizeKeyed(v, (day) => normalizeKeyed(day, normalizePhoto));
 }
 
 export function normalizeGuideSection(v: unknown): GuideSection {

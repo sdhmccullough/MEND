@@ -123,6 +123,20 @@
             "source": { ".validate": "newData.val() == 'gcal' || newData.val() == 'manual'" }
           }
         },
+        "photos": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$dateKey": {
+            ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+            ".validate": "$dateKey.matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)",
+            "$photoId": {
+              "url": { ".validate": "newData.isString() && newData.val().length < 2048" },
+              "path": { ".validate": "newData.isString() && newData.val().length < 512" },
+              "by": { ".validate": "newData.val() == auth.uid" },
+              "at": { ".validate": "newData.isNumber()" },
+              "$other": { ".validate": false }
+            }
+          }
+        },
         "agents": {
           ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
           "$uid": {

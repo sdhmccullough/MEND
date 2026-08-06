@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import type { Appointment } from '../../lib/schema';
 import { materializeDay, type DoseView } from '../../lib/doses';
+import { uploadDayPhoto } from '../../store/sync';
 import { epochToDateKey, formatDayHeading, formatEpochTime, formatHHMM12 } from '../../lib/dates';
 import { Dialog } from '../../components/ui/Dialog';
 import { Button } from '../../components/ui/Button';
 import { SectionLabel } from '../../components/ui/Card';
+import { toast, toastError } from '../../components/ui/Toast';
 import { AppointmentDialog } from './AppointmentDialog';
 import { CheckIcon, XIcon } from '../../components/icons';
 
@@ -73,7 +75,10 @@ export function DayDetail({
   const appointments = useStore((s) => s.appointments);
   const ptSessions = useStore((s) => s.ptSessions);
   const metrics = useStore((s) => s.metrics);
+  const dayPhotos = useStore((s) => s.photos[dateKey]) ?? {};
   const [editAppt, setEditAppt] = useState<{ id: string; appt: Appointment } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement | null>(null);
 
   const views = materializeDay(meds, doses[dateKey] ?? {}, dateKey, Date.now());
   const dayAppts = Object.entries(appointments)
@@ -185,6 +190,53 @@ export function DayDetail({
             </p>
           </section>
         ) : null}
+
+        <section className="space-y-1.5">
+          <SectionLabel>Photos</SectionLabel>
+          {Object.keys(dayPhotos).length > 0 ? (
+            <div className="grid grid-cols-3 gap-1.5">
+              {Object.entries(dayPhotos).map(([id, p]) => (
+                <a key={id} href={p.url} target="_blank" rel="noreferrer">
+                  <img
+                    src={p.url}
+                    alt={`Photo from ${dateKey}`}
+                    className="aspect-square w-full rounded-(--radius-control) object-cover"
+                    loading="lazy"
+                  />
+                </a>
+              ))}
+            </div>
+          ) : null}
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              setUploading(true);
+              uploadDayPhoto(dateKey, file)
+                .then(() => toast('Photo added'))
+                .catch(() =>
+                  toastError(
+                    'Upload failed',
+                    'Photo storage may not be set up yet — try again later.',
+                  ),
+                )
+                .finally(() => setUploading(false));
+            }}
+          />
+          <Button
+            variant="outline"
+            className="!min-h-9 w-full"
+            disabled={uploading}
+            onClick={() => fileInput.current?.click()}
+          >
+            {uploading ? 'Uploading…' : 'Add photo (incision / swelling)'}
+          </Button>
+        </section>
 
         <Button variant="ghost" className="w-full" onClick={onClose}>
           Close

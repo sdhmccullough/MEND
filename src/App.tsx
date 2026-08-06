@@ -11,6 +11,7 @@ import { MedsTab } from './features/meds/MedsTab';
 import { CalendarTab } from './features/calendar/CalendarTab';
 import { ProgressTab } from './features/progress/ProgressTab';
 import { GuideTab } from './features/guide/GuideTab';
+import { ProviderReport } from './features/report/ProviderReport';
 import { SettingsDialog } from './features/household/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { IconButton } from './components/ui/Button';
@@ -194,6 +195,13 @@ function InvitePrompt() {
 export default function App() {
   const user = useStore((s) => s.user);
   const authReady = useStore((s) => s.authReady);
+  const reportOpen = useStore((s) => s.reportOpen);
+  const setReportOpen = useStore((s) => s.setReportOpen);
+
+  // The report replaces the whole tree so window.print() yields a clean doc.
+  if (reportOpen && user) {
+    return <ProviderReport onClose={() => setReportOpen(false)} />;
+  }
 
   return (
     <>

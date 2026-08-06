@@ -16,6 +16,12 @@ import { Field, TextInput } from '../../components/ui/Field';
 import { toast, toastError } from '../../components/ui/Toast';
 import { TrashIcon } from '../../components/icons';
 import { isNotifyEnabled, setNotifyEnabled } from '../../lib/notify';
+import {
+  disablePushHere,
+  enablePushHere,
+  isPushConfigured,
+  isPushEnabledHere,
+} from '../../lib/push';
 import { needsIosInstallHint, promptInstall } from '../../lib/install';
 import { doseLogCsv, downloadFile, householdExportJson } from '../../lib/export';
 import { readStore } from '../../store/useStore';
@@ -153,6 +159,7 @@ export function SettingsDialog({
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeChoice>(getTheme());
   const [notify, setNotify] = useState(isNotifyEnabled());
+  const [push, setPush] = useState(isPushEnabledHere());
 
   const isOwner = user !== null && ownerUid === user.uid;
 
@@ -265,6 +272,44 @@ export function SettingsDialog({
           </div>
         </section>
 
+        <section aria-label="Push reminders" className="space-y-3">
+          <SectionLabel>Push reminders</SectionLabel>
+          {!isPushConfigured() ? (
+            <p className="text-xs text-muted">
+              Dose reminders that fire with the app closed switch on once the
+              Cloud Messaging key is set up (console step, needs Blaze).
+            </p>
+          ) : (
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-muted">
+                Dose reminders on this device
+                <span className="block text-xs">
+                  Pushes at each scheduled dose time, even with the app closed.
+                </span>
+              </span>
+              <Switch
+                checked={push}
+                onCheckedChange={(on) => {
+                  if (on) {
+                    void enablePushHere().then((granted) => {
+                      setPush(granted);
+                      if (!granted)
+                        toastError(
+                          'Could not enable push',
+                          'Allow notifications for this site and try again.',
+                        );
+                    });
+                  } else {
+                    setPush(false);
+                    void disablePushHere();
+                  }
+                }}
+                label="Push dose reminders on this device"
+              />
+            </div>
+          )}
+        </section>
+
         <section aria-label="Notifications" className="space-y-3">
           <SectionLabel>Notifications</SectionLabel>
           <div className="flex items-center justify-between gap-3 text-sm">
@@ -375,6 +420,16 @@ export function SettingsDialog({
 
         <section aria-label="Export" className="space-y-3">
           <SectionLabel>Export</SectionLabel>
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={() => {
+              onOpenChange(false);
+              useStore.getState().setReportOpen(true);
+            }}
+          >
+            Provider summary (print / PDF)
+          </Button>
           <div className="flex gap-2">
             <Button
               variant="outline"
