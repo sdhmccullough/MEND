@@ -4,6 +4,7 @@ import {
   normalizeAppointment,
   normalizeDose,
   normalizeDoses,
+  normalizeGuideSection,
   normalizeInboxItem,
   normalizeInjury,
   normalizeMed,
@@ -27,6 +28,7 @@ describe('normalizers are total', () => {
     ['normalizeMetric', normalizeMetric],
     ['normalizeAppointment', normalizeAppointment],
     ['normalizeInboxItem', normalizeInboxItem],
+    ['normalizeGuideSection', normalizeGuideSection],
     ['normalizeSettings', normalizeSettings],
   ])('%s never throws on garbage', (_name, fn) => {
     for (const g of GARBAGE) expect(() => fn(g)).not.toThrow();

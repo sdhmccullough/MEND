@@ -65,6 +65,7 @@ export function initAuth(): void {
         metrics: {},
         appointments: {},
         hep: DEFAULT_HEP,
+        guide: {},
         settings: DEFAULT_SETTINGS,
         inbox: {},
         agents: {},

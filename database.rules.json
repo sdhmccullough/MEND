@@ -50,6 +50,15 @@
           ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
           ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()"
         },
+        "guide": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$sectionId": {
+            "title": { ".validate": "newData.isString() && newData.val().length < 256" },
+            "body": { ".validate": "newData.isString() && newData.val().length < 16384" },
+            "order": { ".validate": "newData.isNumber()" }
+          }
+        },
         "meds": {
           ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
           ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",

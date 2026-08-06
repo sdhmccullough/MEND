@@ -14,3 +14,6 @@ dev-dist/
 # Local tool settings
 .claude/settings.local.json
 .claude/launch.json
+
+# Real medical records live locally only — the repo never contains real data
+*.pdf

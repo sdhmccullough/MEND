@@ -3,6 +3,7 @@ import type {
   Appointment,
   DayMetric,
   DoseRecord,
+  GuideSection,
   HepTemplate,
   InboxItem,
   Injury,
@@ -14,10 +15,12 @@ import type {
 import { DEFAULT_HEP, DEFAULT_INJURY, DEFAULT_SETTINGS } from '../lib/schema';
 
 export type SyncStatus = 'connecting' | 'synced' | 'syncing' | 'offline';
-export type Tab = 'today' | 'meds' | 'calendar' | 'progress';
+export type Tab = 'today' | 'meds' | 'calendar' | 'progress' | 'guide';
 
 export function isTab(v: unknown): v is Tab {
-  return v === 'today' || v === 'meds' || v === 'calendar' || v === 'progress';
+  return (
+    v === 'today' || v === 'meds' || v === 'calendar' || v === 'progress' || v === 'guide'
+  );
 }
 
 export interface AppUser {
@@ -45,6 +48,7 @@ interface Store {
   metrics: Record<string, DayMetric>;
   appointments: Record<string, Appointment>;
   hep: HepTemplate;
+  guide: Record<string, GuideSection>;
   settings: Settings;
   inbox: Record<string, InboxItem>;
   agents: Record<string, boolean>;
@@ -81,6 +85,7 @@ export const useStore = create<Store>((set) => ({
   metrics: {},
   appointments: {},
   hep: DEFAULT_HEP,
+  guide: {},
   settings: DEFAULT_SETTINGS,
   inbox: {},
   agents: {},

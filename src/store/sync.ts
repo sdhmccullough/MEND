@@ -19,6 +19,7 @@ import { patchStore, readStore, useStore } from './useStore';
 import {
   normalizeAppointment,
   normalizeDoses,
+  normalizeGuideSection,
   normalizeHep,
   normalizeInboxItem,
   normalizeInjury,
@@ -32,6 +33,7 @@ import {
   type DoseRecord,
   type Exercise,
   type GcalSettings,
+  type GuideSection,
   type Injury,
   type Med,
   type PtSession,
@@ -57,6 +59,7 @@ const CACHE_SLICES = [
   'metrics',
   'appointments',
   'hep',
+  'guide',
   'settings',
   'inbox',
   'agents',
@@ -83,6 +86,7 @@ function hydrateFromCache(hid: string): void {
       metrics: normalizeKeyed(cached.metrics, normalizeMetric),
       appointments: normalizeKeyed(cached.appointments, normalizeAppointment),
       hep: normalizeHep(cached.hep),
+      guide: normalizeKeyed(cached.guide, normalizeGuideSection),
       settings: normalizeSettings(cached.settings),
       inbox: normalizeKeyed(cached.inbox, normalizeInboxItem),
       agents: normalizeKeyed(cached.agents, (v) => v === true),
@@ -156,6 +160,7 @@ export async function attachHousehold(hid: string): Promise<void> {
       (v) => patchStore({ appointments: normalizeKeyed(v, normalizeAppointment) }),
     ],
     ['hep', (v) => patchStore({ hep: normalizeHep(v) })],
+    ['guide', (v) => patchStore({ guide: normalizeKeyed(v, normalizeGuideSection) })],
     ['settings', (v) => patchStore({ settings: normalizeSettings(v) })],
     ['inbox', (v) => patchStore({ inbox: normalizeKeyed(v, normalizeInboxItem) })],
     ['agents', (v) => patchStore({ agents: normalizeKeyed(v, (x) => x === true) })],
@@ -329,6 +334,24 @@ export function deletePtSession(sessionId: string): Promise<void> {
 
 export function saveHep(exercises: Exercise[]): Promise<void> {
   return writing(update(hhRef('hep'), { exercises, updatedAt: serverTimestamp() }));
+}
+
+// ---- care guide ----------------------------------------------------------------
+
+export function saveGuideSection(
+  sectionId: string | null,
+  section: Omit<GuideSection, 'updatedAt'>,
+): Promise<string> {
+  const id = sectionId ?? newKey();
+  return writing(
+    update(hhRef(`guide/${id}`), { ...section, updatedAt: serverTimestamp() }).then(
+      () => id,
+    ),
+  );
+}
+
+export function deleteGuideSection(sectionId: string): Promise<void> {
+  return writing(remove(hhRef(`guide/${sectionId}`)));
 }
 
 // ---- appointments ---------------------------------------------------------------

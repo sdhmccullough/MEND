@@ -10,11 +10,13 @@ import { TodayTab } from './features/today/TodayTab';
 import { MedsTab } from './features/meds/MedsTab';
 import { CalendarTab } from './features/calendar/CalendarTab';
 import { ProgressTab } from './features/progress/ProgressTab';
+import { GuideTab } from './features/guide/GuideTab';
 import { SettingsDialog } from './features/household/SettingsDialog';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { IconButton } from './components/ui/Button';
 import {
   CalendarIcon,
+  ClipboardIcon,
   GearIcon,
   PillIcon,
   SunIcon,
@@ -56,6 +58,7 @@ const TAB_ITEMS: Array<{ value: Tab; label: string; icon: typeof SunIcon }> = [
   { value: 'meds', label: 'Meds', icon: PillIcon },
   { value: 'calendar', label: 'Calendar', icon: CalendarIcon },
   { value: 'progress', label: 'Progress', icon: TrendingUpIcon },
+  { value: 'guide', label: 'Guide', icon: ClipboardIcon },
 ];
 
 function AppShell() {
@@ -129,6 +132,9 @@ function AppShell() {
           </Tabs.Content>
           <Tabs.Content value="progress" className="focus:outline-none">
             <ProgressTab />
+          </Tabs.Content>
+          <Tabs.Content value="guide" className="focus:outline-none">
+            <GuideTab />
           </Tabs.Content>
         </main>
       </div>

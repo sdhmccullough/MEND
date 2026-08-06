@@ -170,6 +170,14 @@ export function seedDemoStore(): void {
       updatedAt: daysAgo(2),
     },
 
+    guide: {
+      'demo-g1': {
+        title: 'Wound care',
+        body: 'Keep dressing dry and clean.\nShower OK after day 3 — no direct spray.\nNo soaking until cleared.',
+        order: 1,
+        updatedAt: daysAgo(1),
+      },
+    },
     settings: { gcal: DEFAULT_GCAL },
     inbox: {
       'demo-inbox1': {

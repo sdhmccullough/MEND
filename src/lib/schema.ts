@@ -147,6 +147,18 @@ export interface InboxItem {
   status: InboxStatus;
 }
 
+// ---- care guide --------------------------------------------------------------
+// Editable reference sections (discharge instructions, wound care, contacts)
+// so the "what did they say again?" answers live in the app, not a paper
+// folder. Seeded from the after-visit summary; either spouse can edit.
+
+export interface GuideSection {
+  title: string;
+  body: string; // plain text; newlines preserved in the UI
+  order: number;
+  updatedAt: number | null;
+}
+
 // ---- settings / members ----------------------------------------------------
 
 export interface GcalSettings {
@@ -422,6 +434,16 @@ export function normalizeInboxItem(v: unknown): InboxItem {
     payload: o.payload,
     receivedAt: num(o.receivedAt),
     status,
+  };
+}
+
+export function normalizeGuideSection(v: unknown): GuideSection {
+  const o = rec(v);
+  return {
+    title: str(o.title),
+    body: str(o.body),
+    order: num(o.order),
+    updatedAt: numOrNull(o.updatedAt),
   };
 }
 
