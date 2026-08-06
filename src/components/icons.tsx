@@ -110,6 +110,14 @@ export const ChevronRightIcon = (p: SVGProps<SVGSVGElement>) => (
   </Icon>
 );
 
+export const MoreIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <circle cx="5" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="19" cy="12" r="1.5" fill="currentColor" />
+  </Icon>
+);
+
 export const CopyIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}>
     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />

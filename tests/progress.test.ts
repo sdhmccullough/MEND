@@ -24,7 +24,7 @@ function session(overrides: Partial<PtSession> = {}): PtSession {
 }
 
 function metric(pain: number | null, rom: Record<string, number> = {}): DayMetric {
-  return { pain, rom, notes: '', by: 'u1' };
+  return { pain, sane: null, rom, notes: '', by: 'u1' };
 }
 
 const NOW = new Date(2026, 7, 6, 12, 0).getTime();

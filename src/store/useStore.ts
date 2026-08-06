@@ -10,7 +10,10 @@ import type {
   Med,
   Member,
   Photo,
+  ProtocolPhase,
   PtSession,
+  Routine,
+  RoutineLog,
   Settings,
 } from '../lib/schema';
 import { DEFAULT_HEP, DEFAULT_INJURY, DEFAULT_SETTINGS } from '../lib/schema';
@@ -52,6 +55,10 @@ interface Store {
   guide: Record<string, GuideSection>;
   /** dateKey → photoId → listing record. */
   photos: Record<string, Record<string, Photo>>;
+  routines: Record<string, Routine>;
+  /** dateKey → logId → routine rep. */
+  routineLogs: Record<string, Record<string, RoutineLog>>;
+  protocol: Record<string, ProtocolPhase>;
   settings: Settings;
   inbox: Record<string, InboxItem>;
   agents: Record<string, boolean>;
@@ -93,6 +100,9 @@ export const useStore = create<Store>((set) => ({
   hep: DEFAULT_HEP,
   guide: {},
   photos: {},
+  routines: {},
+  routineLogs: {},
+  protocol: {},
   settings: DEFAULT_SETTINGS,
   inbox: {},
   agents: {},

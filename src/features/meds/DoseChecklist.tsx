@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { logDoseTaken, logPrnDose, skipDose, undoDose } from '../../store/sync';
 import {
@@ -16,9 +16,7 @@ import { Dialog } from '../../components/ui/Dialog';
 import { Button } from '../../components/ui/Button';
 import { Field, TextInput, inputClass } from '../../components/ui/Field';
 import { toast, toastError } from '../../components/ui/Toast';
-import { CheckIcon, ClockIcon, XIcon } from '../../components/icons';
-
-const LONG_PRESS_MS = 500;
+import { CheckIcon, ClockIcon, MoreIcon, XIcon } from '../../components/icons';
 
 function StatusDot({ view }: { view: DoseView }) {
   if (view.status === 'taken') {
@@ -180,23 +178,8 @@ export function DoseChecklist() {
   );
 
   const [optionsFor, setOptionsFor] = useState<DoseView | null>(null);
-  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressed = useRef(false);
-
-  const startPress = (view: DoseView) => {
-    longPressed.current = false;
-    pressTimer.current = setTimeout(() => {
-      longPressed.current = true;
-      setOptionsFor(view);
-    }, LONG_PRESS_MS);
-  };
-  const cancelPress = () => {
-    if (pressTimer.current) clearTimeout(pressTimer.current);
-    pressTimer.current = null;
-  };
 
   const tap = (view: DoseView) => {
-    if (longPressed.current) return; // the long-press already opened options
     if (view.status === 'pending' || view.status === 'overdue') {
       logDoseTaken(view.medId, today, view.slot as string).catch(() =>
         toastError('Not synced', 'Try again.'),
@@ -235,13 +218,10 @@ export function DoseChecklist() {
       {views.length > 0 ? (
         <ul className="mt-2 space-y-1.5">
           {views.map((v) => (
-            <li key={v.doseId}>
+            <li key={v.doseId} className="flex items-stretch gap-1.5">
               <button
                 type="button"
-                className="flex w-full items-center gap-3 rounded-(--radius-control) bg-surface-2 px-3 py-2 text-left transition active:scale-[0.99]"
-                onPointerDown={() => startPress(v)}
-                onPointerUp={cancelPress}
-                onPointerLeave={cancelPress}
+                className="flex min-h-14 flex-1 items-center gap-3 rounded-(--radius-control) bg-surface-2 px-3 text-left transition active:scale-[0.99]"
                 onClick={() => tap(v)}
                 aria-label={`${meds[v.medId]?.name ?? 'Med'} ${v.slot ? formatHHMM12(v.slot) : ''}: ${statusLine(v)}. Tap to ${v.status === 'pending' || v.status === 'overdue' ? 'mark taken' : 'edit'}.`}
               >
@@ -257,6 +237,16 @@ export function DoseChecklist() {
                     {v.slot ? formatHHMM12(v.slot) : ''} — {statusLine(v)}
                   </span>
                 </span>
+              </button>
+              {/* Visible options button — a long-press is hard to land
+                  one-handed with a sling on. */}
+              <button
+                type="button"
+                onClick={() => setOptionsFor(v)}
+                aria-label={`Options for ${meds[v.medId]?.name ?? 'med'} ${v.slot ? formatHHMM12(v.slot) : ''}`}
+                className="flex w-12 shrink-0 items-center justify-center rounded-(--radius-control) bg-surface-2 text-muted transition active:scale-95 hover:text-ink"
+              >
+                <MoreIcon className="size-5" />
               </button>
             </li>
           ))}
@@ -293,17 +283,39 @@ export function DoseChecklist() {
                     {med.schedule.kind === 'times' ? ' · not on today’s schedule' : ''}
                   </span>
                 </span>
-                <Button
-                  variant={due.dueNow ? 'primary' : 'outline'}
-                  className="!min-h-9 shrink-0"
-                  onClick={() =>
-                    logPrnDose(medId)
-                      .then(() => toast('Dose logged', med.name))
-                      .catch(() => toastError('Not synced', 'Try again.'))
-                  }
-                >
-                  Take now
-                </Button>
+                {med.variableDose ? (
+                  // Dose is a range (e.g. 1–2 tablets): record how many, so
+                  // the supply countdown stays honest.
+                  <span className="flex shrink-0 gap-1">
+                    {[1, 2].map((n) => (
+                      <Button
+                        key={n}
+                        variant={due.dueNow && n === 1 ? 'primary' : 'outline'}
+                        className="!min-h-11 !px-3"
+                        onClick={() =>
+                          logPrnDose(medId, '', n)
+                            .then(() => toast('Dose logged', `${med.name} · ${n}`))
+                            .catch(() => toastError('Not synced', 'Try again.'))
+                        }
+                        aria-label={`Log ${n} ${n === 1 ? 'tablet' : 'tablets'} of ${med.name}`}
+                      >
+                        {n}
+                      </Button>
+                    ))}
+                  </span>
+                ) : (
+                  <Button
+                    variant={due.dueNow ? 'primary' : 'outline'}
+                    className="!min-h-11 shrink-0"
+                    onClick={() =>
+                      logPrnDose(medId)
+                        .then(() => toast('Dose logged', med.name))
+                        .catch(() => toastError('Not synced', 'Try again.'))
+                    }
+                  >
+                    Take now
+                  </Button>
+                )}
               </div>
             );
           })}

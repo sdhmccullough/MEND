@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import type { Med } from '../../lib/schema';
+import type { DoseRecord, Med } from '../../lib/schema';
 import { doseTextForDate } from '../../lib/doses';
+import { medSupply } from '../../lib/supply';
 import { formatHHMM12, todayKey } from '../../lib/dates';
 import { Card, SectionLabel } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -15,10 +16,21 @@ function scheduleSummary(med: Med): string {
   return s.times.map(formatHHMM12).join(' · ');
 }
 
-function MedRow({ med, onEdit }: { med: Med; onEdit: () => void }) {
+function MedRow({
+  med,
+  medId,
+  doses,
+  onEdit,
+}: {
+  med: Med;
+  medId: string;
+  doses: Record<string, Record<string, DoseRecord>>;
+  onEdit: () => void;
+}) {
   const today = todayKey();
   const currentDose = doseTextForDate(med, today);
   const tapering = currentDose !== med.doseText;
+  const supply = medSupply(med, medId, doses, Date.now());
   return (
     <button
       type="button"
@@ -33,14 +45,23 @@ function MedRow({ med, onEdit }: { med: Med; onEdit: () => void }) {
         {currentDose}
         {tapering ? ' (tapering)' : ''}
         {med.purpose ? ` · ${med.purpose}` : ''}
-        {med.notes ? ` · ${med.notes}` : ''}
       </span>
+      {supply ? (
+        <span
+          className={`mt-1 block text-xs ${supply.low ? 'font-medium text-warn' : 'text-muted'}`}
+        >
+          ≈{supply.remaining} of {supply.filled} left
+          {supply.daysLeft !== null ? ` · ~${supply.daysLeft} days` : ''}
+          {supply.low ? ' · running low' : ''}
+        </span>
+      ) : null}
     </button>
   );
 }
 
 export function MedsTab() {
   const meds = useStore((s) => s.meds);
+  const doses = useStore((s) => s.doses);
   const [editor, setEditor] = useState<{ medId: string | null; key: number } | null>(null);
   const [backfillOpen, setBackfillOpen] = useState(false);
 
@@ -73,7 +94,12 @@ export function MedsTab() {
           <ul className="mt-2 space-y-1.5">
             {active.map(([id, med]) => (
               <li key={id}>
-                <MedRow med={med} onEdit={() => openEditor(id)} />
+                <MedRow
+                  med={med}
+                  medId={id}
+                  doses={doses}
+                  onEdit={() => openEditor(id)}
+                />
               </li>
             ))}
           </ul>
@@ -86,7 +112,12 @@ export function MedsTab() {
           <ul className="mt-2 space-y-1.5 opacity-70">
             {archived.map(([id, med]) => (
               <li key={id}>
-                <MedRow med={med} onEdit={() => openEditor(id)} />
+                <MedRow
+                  med={med}
+                  medId={id}
+                  doses={doses}
+                  onEdit={() => openEditor(id)}
+                />
               </li>
             ))}
           </ul>

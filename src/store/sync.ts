@@ -34,8 +34,11 @@ import {
   normalizeMed,
   normalizeMember,
   normalizeMetric,
+  normalizePhase,
   normalizePhotos,
   normalizePtSession,
+  normalizeRoutine,
+  normalizeRoutineLogs,
   normalizeSettings,
   type Appointment,
   type DoseRecord,
@@ -44,7 +47,9 @@ import {
   type GuideSection,
   type Injury,
   type Med,
+  type ProtocolPhase,
   type PtSession,
+  type Routine,
 } from '../lib/schema';
 import { todayKey } from '../lib/dates';
 import { scheduledDoseId } from '../lib/doses';
@@ -69,6 +74,9 @@ const CACHE_SLICES = [
   'hep',
   'guide',
   'photos',
+  'routines',
+  'routineLogs',
+  'protocol',
   'settings',
   'inbox',
   'agents',
@@ -97,6 +105,9 @@ function hydrateFromCache(hid: string): void {
       hep: normalizeHep(cached.hep),
       guide: normalizeKeyed(cached.guide, normalizeGuideSection),
       photos: normalizePhotos(cached.photos),
+      routines: normalizeKeyed(cached.routines, normalizeRoutine),
+      routineLogs: normalizeRoutineLogs(cached.routineLogs),
+      protocol: normalizeKeyed(cached.protocol, normalizePhase),
       settings: normalizeSettings(cached.settings),
       inbox: normalizeKeyed(cached.inbox, normalizeInboxItem),
       agents: normalizeKeyed(cached.agents, (v) => v === true),
@@ -172,6 +183,9 @@ export async function attachHousehold(hid: string): Promise<void> {
     ['hep', (v) => patchStore({ hep: normalizeHep(v) })],
     ['guide', (v) => patchStore({ guide: normalizeKeyed(v, normalizeGuideSection) })],
     ['photos', (v) => patchStore({ photos: normalizePhotos(v) })],
+    ['routines', (v) => patchStore({ routines: normalizeKeyed(v, normalizeRoutine) })],
+    ['routineLogs', (v) => patchStore({ routineLogs: normalizeRoutineLogs(v) })],
+    ['protocol', (v) => patchStore({ protocol: normalizeKeyed(v, normalizePhase) })],
     ['settings', (v) => patchStore({ settings: normalizeSettings(v) })],
     ['inbox', (v) => patchStore({ inbox: normalizeKeyed(v, normalizeInboxItem) })],
     ['agents', (v) => patchStore({ agents: normalizeKeyed(v, (x) => x === true) })],
@@ -271,11 +285,13 @@ export function logDoseTaken(
   dateKey: string,
   slot: string,
   takenAt: number = Date.now(),
+  units = 1,
 ): Promise<void> {
   const rec = doseRecord({
     medId,
     plannedAt: slot,
     takenAt,
+    units,
     status: 'taken',
     backfilled: false,
   });
@@ -292,6 +308,7 @@ export function skipDose(
     medId,
     plannedAt: slot,
     takenAt: null,
+    units: 1,
     status: 'skipped',
     backfilled: false,
     note,
@@ -300,11 +317,12 @@ export function skipDose(
 }
 
 /** Log a PRN (as-needed) or interval dose — no fixed slot to collide on. */
-export function logPrnDose(medId: string, note = ''): Promise<void> {
+export function logPrnDose(medId: string, note = '', units = 1): Promise<void> {
   const rec = doseRecord({
     medId,
     plannedAt: null,
     takenAt: Date.now(),
+    units,
     status: 'taken',
     backfilled: false,
     note,
@@ -327,9 +345,46 @@ export function commitBackfill(updates: Record<string, DoseRecord>): Promise<voi
 
 export function saveMetric(
   dateKey: string,
-  patch: { pain?: number | null; notes?: string },
+  patch: { pain?: number | null; sane?: number | null; notes?: string },
 ): Promise<void> {
   return writing(update(hhRef(`metrics/${dateKey}`), { ...patch, by: uid() ?? null }));
+}
+
+// ---- routines ---------------------------------------------------------------------
+
+export function logRoutine(routineId: string, dateKey: string): Promise<void> {
+  return writing(
+    update(hhRef(`routineLogs/${dateKey}/${newKey()}`), {
+      routineId,
+      at: serverTimestamp(),
+      by: uid() ?? null,
+    }),
+  );
+}
+
+/** Undo the most recent rep (mis-taps happen one-handed). */
+export function undoRoutineLog(dateKey: string, logId: string): Promise<void> {
+  return writing(remove(hhRef(`routineLogs/${dateKey}/${logId}`)));
+}
+
+export function saveRoutine(routineId: string | null, routine: Routine): Promise<string> {
+  const id = routineId ?? newKey();
+  return writing(update(hhRef(`routines/${id}`), routine).then(() => id));
+}
+
+export function deleteRoutine(routineId: string): Promise<void> {
+  return writing(remove(hhRef(`routines/${routineId}`)));
+}
+
+// ---- protocol phases ---------------------------------------------------------------
+
+export function savePhase(phaseId: string | null, phase: ProtocolPhase): Promise<string> {
+  const id = phaseId ?? newKey();
+  return writing(update(hhRef(`protocol/${id}`), phase).then(() => id));
+}
+
+export function deletePhase(phaseId: string): Promise<void> {
+  return writing(remove(hhRef(`protocol/${phaseId}`)));
 }
 
 // ---- PT sessions / HEP ---------------------------------------------------------

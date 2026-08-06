@@ -19,6 +19,7 @@ describe('buildBackfillUpdates', () => {
       medId: 'medA',
       plannedAt: '08:00',
       takenAt: null, // coarse honesty: no fictional exact times
+      units: 1,
       status: 'taken',
       backfilled: true,
       by: 'uid1',

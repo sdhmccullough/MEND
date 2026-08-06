@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { Dialog } from '../../components/ui/Dialog';
 import { Field, TextInput, inputClass } from '../../components/ui/Field';
 import { toast, toastError } from '../../components/ui/Toast';
+import { ProtocolTimeline } from './ProtocolTimeline';
 
 /** The recovery README: injury history up top, then editable reference
  * sections (discharge instructions, wound care, contacts) seeded from the
@@ -67,6 +68,8 @@ export function GuideTab() {
           ) : null}
         </Card>
       ) : null}
+
+      <ProtocolTimeline />
 
       {sections.map(([id, section]) => (
         <Card key={id}>

@@ -58,6 +58,13 @@ export interface Med {
   active: boolean;
   notes: string;
   refills: number | null;
+  /** Narcotic/sedating — drives the "last dose was N ago" driving notice. */
+  noDriving: boolean;
+  /** Dose is a range (e.g. 1–2 tablets), so logging asks how many. */
+  variableDose: boolean;
+  /** Units dispensed and when, for the supply countdown. */
+  fillQuantity: number | null;
+  filledOn: string | null; // dateKey
 }
 
 // ---- doses -----------------------------------------------------------------
@@ -72,6 +79,8 @@ export interface DoseRecord {
   medId: string;
   plannedAt: string | null; // 'HH:MM' slot; null for PRN
   takenAt: number | null; // epoch ms; null for skipped and backfilled
+  /** Tablets/capsules taken — 1 unless a variable-dose med says otherwise. */
+  units: number;
   status: DoseStatus;
   /** Reconstructed history (entered via backfill). Immutable once true —
    * rules enforce it — so the provable-live record stays distinguishable. */
@@ -111,9 +120,43 @@ export interface HepTemplate {
 
 export interface DayMetric {
   pain: number | null; // 0–10, one per day, editable
+  /** SANE: "shoulder as a % of normal" — the measure the care team uses
+   * (recorded as 60 at the pre-op H&P). Logged occasionally, not daily. */
+  sane: number | null; // 0–100
   rom: Record<string, number>;
   notes: string;
   by: string;
+}
+
+// ---- routines ----------------------------------------------------------------
+// The high-frequency discharge instructions (ice every 1–2 h, elbow out of
+// the sling 3× a day) — one tap to log, counted against a daily target.
+
+export interface Routine {
+  label: string;
+  targetPerDay: number;
+  /** Suggested gap between reps, minutes; 0 = no cadence. */
+  everyMinutes: number;
+  active: boolean;
+  order: number;
+}
+
+export interface RoutineLog {
+  routineId: string;
+  at: number;
+  by: string;
+}
+
+// ---- recovery protocol -------------------------------------------------------
+// Phases relative to the surgery date, so the app can answer "where am I
+// and what am I allowed to do" long after the medications end.
+
+export interface ProtocolPhase {
+  label: string;
+  startDay: number; // days post-op, inclusive
+  endDay: number | null; // inclusive; null = open-ended final phase
+  summary: string;
+  order: number;
 }
 
 // ---- appointments ----------------------------------------------------------
@@ -337,6 +380,7 @@ export function normalizeSchedule(v: unknown): MedSchedule {
 export function normalizeMed(v: unknown): Med {
   const o = rec(v);
   const refills = numOrNull(o.refills);
+  const fill = numOrNull(o.fillQuantity);
   return {
     name: str(o.name),
     doseText: str(o.doseText),
@@ -347,6 +391,10 @@ export function normalizeMed(v: unknown): Med {
     active: o.active !== false, // default active
     notes: str(o.notes),
     refills: refills !== null && refills >= 0 ? Math.round(refills) : null,
+    noDriving: o.noDriving === true,
+    variableDose: o.variableDose === true,
+    fillQuantity: fill !== null && fill > 0 ? Math.round(fill) : null,
+    filledOn: strOrNull(o.filledOn),
   };
 }
 
@@ -356,10 +404,12 @@ export function normalizeDose(v: unknown): DoseRecord {
     o.status === 'taken' || o.status === 'skipped' || o.status === 'late'
       ? o.status
       : 'pending';
+  const units = numOrNull(o.units);
   return {
     medId: str(o.medId),
     plannedAt: strOrNull(o.plannedAt),
     takenAt: numOrNull(o.takenAt),
+    units: units !== null && units > 0 ? units : 1,
     status,
     backfilled: o.backfilled === true,
     by: str(o.by),
@@ -408,11 +458,49 @@ export function normalizeHep(v: unknown): HepTemplate {
 
 export function normalizeMetric(v: unknown): DayMetric {
   const o = rec(v);
+  const sane = numOrNull(o.sane);
   return {
     pain: pain(o.pain),
+    sane: sane !== null ? Math.min(100, Math.max(0, Math.round(sane))) : null,
     rom: numberMap(o.rom),
     notes: str(o.notes),
     by: str(o.by),
+  };
+}
+
+export function normalizeRoutine(v: unknown): Routine {
+  const o = rec(v);
+  const target = numOrNull(o.targetPerDay);
+  const every = numOrNull(o.everyMinutes);
+  return {
+    label: str(o.label),
+    targetPerDay: target !== null && target > 0 ? Math.round(target) : 1,
+    everyMinutes: every !== null && every > 0 ? Math.round(every) : 0,
+    active: o.active !== false,
+    order: num(o.order),
+  };
+}
+
+export function normalizeRoutineLog(v: unknown): RoutineLog {
+  const o = rec(v);
+  return { routineId: str(o.routineId), at: num(o.at), by: str(o.by) };
+}
+
+/** routineLogs/$dateKey/$id — nested keyed. */
+export function normalizeRoutineLogs(
+  v: unknown,
+): Record<string, Record<string, RoutineLog>> {
+  return normalizeKeyed(v, (day) => normalizeKeyed(day, normalizeRoutineLog));
+}
+
+export function normalizePhase(v: unknown): ProtocolPhase {
+  const o = rec(v);
+  return {
+    label: str(o.label),
+    startDay: Math.max(0, Math.round(num(o.startDay))),
+    endDay: numOrNull(o.endDay) !== null ? Math.round(num(o.endDay)) : null,
+    summary: str(o.summary),
+    order: num(o.order),
   };
 }
 

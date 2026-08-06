@@ -24,6 +24,7 @@ export function buildBackfillUpdates(
       medId,
       plannedAt: sel.slot,
       takenAt: null,
+      units: 1,
       status: sel.status,
       backfilled: true,
       by: byUid,

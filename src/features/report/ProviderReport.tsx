@@ -2,6 +2,7 @@ import { useStore } from '../../store/useStore';
 import { doseTextForDate } from '../../lib/doses';
 import { currentStreak, rangeAdherence } from '../../lib/adherence';
 import { daysSinceInjury, weekStartOf } from '../../lib/progress';
+import { currentPhase, phaseViews, postOpDay } from '../../lib/protocol';
 import {
   addDays,
   epochToDateKey,
@@ -30,6 +31,7 @@ export function ProviderReport({ onClose }: { onClose: () => void }) {
   const metrics = useStore((s) => s.metrics);
   const ptSessions = useStore((s) => s.ptSessions);
   const appointments = useStore((s) => s.appointments);
+  const protocol = useStore((s) => s.protocol);
   const user = useStore((s) => s.user);
 
   const now = Date.now();
@@ -55,6 +57,13 @@ export function ProviderReport({ onClose }: { onClose: () => void }) {
       avg: (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(1),
       n: vals.length,
     }));
+
+  const saneScores = Object.entries(metrics)
+    .filter(([dateKey, m]) => m.sane !== null && dateKey >= from && dateKey <= today)
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  const opDay = postOpDay(injury.surgeryOn ?? '', now);
+  const phase = currentPhase(phaseViews(protocol, injury.surgeryOn ?? '', now));
 
   const sessions = Object.values(ptSessions)
     .filter((s) => {
@@ -111,7 +120,28 @@ export function ProviderReport({ onClose }: { onClose: () => void }) {
               Care team: {Object.values(injury.providers).join(' · ')}
             </p>
           ) : null}
+          {opDay !== null ? (
+            <p className="text-xs">
+              <span className="font-semibold">Post-op day {opDay}</span>
+              {phase
+                ? ` · ${phase.phase.label}${phase.dayInPhase !== null && phase.lengthDays !== null ? ` (day ${phase.dayInPhase} of ${phase.lengthDays})` : ''}`
+                : ''}
+            </p>
+          ) : null}
         </section>
+
+        {saneScores.length > 0 ? (
+          <section>
+            <h2 className="mb-1 font-bold uppercase tracking-wide">
+              SANE (shoulder as % of normal)
+            </h2>
+            <p className="text-xs">
+              {saneScores
+                .map(([dateKey, m]) => `${formatFull(parseDateKey(dateKey))}: ${m.sane}%`)
+                .join(' · ')}
+            </p>
+          </section>
+        ) : null}
 
         <section>
           <h2 className="mb-1 font-bold uppercase tracking-wide">Medications</h2>

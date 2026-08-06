@@ -68,6 +68,10 @@ export function seedDemoStore(): void {
         active: true,
         notes: 'Take with food',
         refills: 1,
+        noDriving: false,
+        variableDose: false,
+        fillQuantity: 60,
+        filledOn: injuredOn,
       },
       'demo-med2': {
         name: 'Acetaminophen',
@@ -86,6 +90,10 @@ export function seedDemoStore(): void {
         active: true,
         notes: '',
         refills: null,
+        noDriving: false,
+        variableDose: true,
+        fillQuantity: 20,
+        filledOn: injuredOn,
       },
     },
 
@@ -95,6 +103,7 @@ export function seedDemoStore(): void {
           medId: 'demo-med1',
           plannedAt: '08:00',
           takenAt: daysAgo(1),
+          units: 1,
           status: 'taken',
           backfilled: false,
           by: 'demo-user',
@@ -104,6 +113,7 @@ export function seedDemoStore(): void {
           medId: 'demo-med1',
           plannedAt: '20:00',
           takenAt: daysAgo(1),
+          units: 1,
           status: 'taken',
           backfilled: false,
           by: 'demo-partner',
@@ -115,6 +125,7 @@ export function seedDemoStore(): void {
           medId: 'demo-med1',
           plannedAt: '08:00',
           takenAt: hoursAgo(3),
+          units: 1,
           status: 'taken',
           backfilled: false,
           by: 'demo-user',
@@ -142,9 +153,15 @@ export function seedDemoStore(): void {
     },
 
     metrics: {
-      [addDays(today, -2)]: { pain: 5, rom: {}, notes: '', by: 'demo-user' },
-      [addDays(today, -1)]: { pain: 4, rom: {}, notes: 'Slept better', by: 'demo-user' },
-      [today]: { pain: 3, rom: {}, notes: '', by: 'demo-user' },
+      [addDays(today, -2)]: { pain: 5, sane: null, rom: {}, notes: '', by: 'demo-user' },
+      [addDays(today, -1)]: {
+        pain: 4,
+        sane: 45,
+        rom: {},
+        notes: 'Slept better',
+        by: 'demo-user',
+      },
+      [today]: { pain: 3, sane: null, rom: {}, notes: '', by: 'demo-user' },
     },
 
     appointments: {
@@ -170,6 +187,37 @@ export function seedDemoStore(): void {
       updatedAt: daysAgo(2),
     },
 
+    routines: {
+      'demo-r1': { label: 'Ice 30 min', targetPerDay: 8, everyMinutes: 90, active: true, order: 1 },
+      'demo-r2': {
+        label: 'Elbow out of sling',
+        targetPerDay: 3,
+        everyMinutes: 0,
+        active: true,
+        order: 2,
+      },
+    },
+    routineLogs: {
+      [today]: {
+        'demo-rl1': { routineId: 'demo-r1', at: hoursAgo(2), by: 'demo-user' },
+      },
+    },
+    protocol: {
+      'demo-p1': {
+        label: 'Immobilization',
+        startDay: 0,
+        endDay: 41,
+        summary: 'Sling full time including sleep. Elbow out 3× a day.',
+        order: 0,
+      },
+      'demo-p2': {
+        label: 'Motion',
+        startDay: 42,
+        endDay: 83,
+        summary: 'Passive then active range of motion as PT directs.',
+        order: 1,
+      },
+    },
     guide: {
       'demo-g1': {
         title: 'Wound care',

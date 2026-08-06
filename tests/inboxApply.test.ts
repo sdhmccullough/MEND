@@ -19,6 +19,10 @@ const NAPROXEN: Med = {
   active: true,
   notes: '',
   refills: null,
+  noDriving: false,
+  variableDose: false,
+  fillQuantity: null,
+  filledOn: null,
 };
 
 const CTX = {

@@ -27,6 +27,10 @@ export function emptyMed(): Med {
     active: true,
     notes: '',
     refills: null,
+    noDriving: false,
+    variableDose: false,
+    fillQuantity: null,
+    filledOn: null,
   };
 }
 
@@ -65,6 +69,12 @@ export function MedEditorDialog({
   const [startOn, setStartOn] = useState(initial.schedule.startOn);
   const [endOn, setEndOn] = useState(initial.schedule.endOn ?? '');
   const [taper, setTaper] = useState<TaperStep[]>(initial.schedule.taper);
+  const [noDriving, setNoDriving] = useState(initial.noDriving);
+  const [variableDose, setVariableDose] = useState(initial.variableDose);
+  const [fillQuantity, setFillQuantity] = useState(
+    initial.fillQuantity !== null ? String(initial.fillQuantity) : '',
+  );
+  const [filledOn, setFilledOn] = useState(initial.filledOn ?? '');
   const [saving, setSaving] = useState(false);
 
   const setTime = (i: number, v: string) =>
@@ -90,6 +100,10 @@ export function MedEditorDialog({
       active: initial.active,
       notes: notes.trim(),
       refills: initial.refills,
+      noDriving,
+      variableDose,
+      fillQuantity: fillQuantity === '' ? null : Math.max(0, Number(fillQuantity) || 0),
+      filledOn: filledOn || null,
     };
     if (!med.name || (kind === 'times' && med.schedule.times.length === 0)) {
       toastError('Missing details', 'A name and at least one time are required.');
@@ -241,6 +255,45 @@ export function MedEditorDialog({
           >
             <PlusIcon className="size-4" /> Add taper step
           </Button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Quantity filled" hint="For the supply countdown">
+            <TextInput
+              inputMode="numeric"
+              value={fillQuantity}
+              onChange={(e) => setFillQuantity(e.target.value)}
+              placeholder="20"
+            />
+          </Field>
+          <Field label="Fill date">
+            <TextInput
+              type="date"
+              value={filledOn}
+              onChange={(e) => setFilledOn(e.target.value)}
+            />
+          </Field>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="flex min-h-11 items-center gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              checked={noDriving}
+              onChange={(e) => setNoDriving(e.target.checked)}
+              className="size-4 accent-(--accent-strong)"
+            />
+            Narcotic — show a "no driving" notice after a dose
+          </label>
+          <label className="flex min-h-11 items-center gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              checked={variableDose}
+              onChange={(e) => setVariableDose(e.target.checked)}
+              className="size-4 accent-(--accent-strong)"
+            />
+            Variable dose (1–2) — ask how many when logging
+          </label>
         </div>
 
         <Field label="Notes">

@@ -4,7 +4,9 @@ import { formatEpochTime, formatFull } from '../../lib/dates';
 import { DoseChecklist } from '../meds/DoseChecklist';
 import { InboxCards } from '../inbox/InboxCards';
 import { PtCard } from '../pt/PtCard';
-import { PainQuickLog } from './PainQuickLog';
+import { PainQuickLog, SaneQuickLog } from './PainQuickLog';
+import { RoutineChips } from './RoutineChips';
+import { StatusCard } from './StatusCard';
 
 const KIND_LABELS: Record<string, string> = {
   doctor: 'Doctor',
@@ -49,13 +51,19 @@ export function TodayTab() {
     <div className="space-y-3">
       <InboxCards />
 
+      <StatusCard />
+
       <NextAppointment />
 
       <DoseChecklist />
 
+      <RoutineChips />
+
       <PtCard />
 
       <PainQuickLog />
+
+      <SaneQuickLog />
     </div>
   );
 }

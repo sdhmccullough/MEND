@@ -117,6 +117,7 @@ function interpretDoseLog(id: string, item: InboxItem, ctx: ApplyContext): Inbox
     medId: resolved.id,
     plannedAt: slot,
     takenAt,
+    units: typeof p.units === 'number' && p.units > 0 ? p.units : 1,
     status: 'taken',
     backfilled: false,
     by: ctx.uid,

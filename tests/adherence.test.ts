@@ -30,6 +30,10 @@ function med(overrides: MedOverrides = {}): Med {
     active: true,
     notes: '',
     refills: null,
+    noDriving: false,
+    variableDose: false,
+    fillQuantity: null,
+    filledOn: null,
     ...rest,
   };
 }
@@ -39,6 +43,7 @@ function taken(medId: string, slot: string, backfilled = false): DoseRecord {
     medId,
     plannedAt: slot,
     takenAt: backfilled ? null : 1,
+    units: 1,
     status: 'taken',
     backfilled,
     by: 'u1',
