@@ -2,15 +2,16 @@
 // (fire with the app closed). Each device opts in from Settings; tokens
 // live under settings/fcmTokens and the scheduled Cloud Function fans out.
 //
-// TODO(sterling): replace with the Web Push certificate key pair from
-// Firebase console → Project settings → Cloud Messaging (needs Blaze).
+// The VAPID public key is origin-restricted, not a secret — it identifies
+// this app to the push service. (Console → Cloud Messaging → Web Push.)
 
 import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messaging';
 import { app } from './firebase';
 import { removeFcmToken, saveFcmToken } from '../store/sync';
 import { toast } from '../components/ui/Toast';
 
-export const VAPID_KEY = 'MEND_VAPID_KEY';
+export const VAPID_KEY =
+  'BNEd6sgDF9H7J53icIpmCUUsJ6y7__kb3UOJEVpDrqNJEVjkqC96RLeABEKVEwCGiZEuQDocasNEgsknEwpmnLI';
 
 const ENABLED_KEY = 'mend:push';
 const DEVICE_KEY = 'mend:push:device';
@@ -44,7 +45,12 @@ export async function enablePushHere(): Promise<boolean> {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return false;
 
-  const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+  // Narrow scope on purpose: at root scope this worker would displace the
+  // PWA's own service worker (offline cache + update prompt). This is the
+  // scope FCM uses by default.
+  const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+    scope: '/firebase-cloud-messaging-push-scope',
+  });
   const messaging = getMessaging(app);
   const token = await getToken(messaging, {
     vapidKey: VAPID_KEY,
