@@ -17,6 +17,9 @@ import { toast, toastError } from '../../components/ui/Toast';
 import { TrashIcon } from '../../components/icons';
 import { isNotifyEnabled, setNotifyEnabled } from '../../lib/notify';
 import { needsIosInstallHint, promptInstall } from '../../lib/install';
+import { doseLogCsv, downloadFile, householdExportJson } from '../../lib/export';
+import { readStore } from '../../store/useStore';
+import { todayKey } from '../../lib/dates';
 
 function InjurySection() {
   const injury = useStore((s) => s.injury);
@@ -366,6 +369,55 @@ export function SettingsDialog({
             )}
           </section>
         ) : null}
+
+        <section aria-label="Export" className="space-y-3">
+          <SectionLabel>Export</SectionLabel>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                const s = readStore();
+                downloadFile(
+                  householdExportJson(
+                    {
+                      injury: s.injury,
+                      meds: s.meds,
+                      doses: s.doses,
+                      ptSessions: s.ptSessions,
+                      metrics: s.metrics,
+                      appointments: s.appointments,
+                      hep: s.hep,
+                    },
+                    Date.now(),
+                  ),
+                  `mend-export-${todayKey()}.json`,
+                  'application/json',
+                );
+              }}
+            >
+              Full record (JSON)
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                const s = readStore();
+                downloadFile(
+                  doseLogCsv(s.meds, s.doses),
+                  `mend-doses-${todayKey()}.csv`,
+                  'text/csv',
+                );
+              }}
+            >
+              Dose log (CSV)
+            </Button>
+          </div>
+          <p className="text-xs text-muted">
+            The record's value outlives the recovery — export before you stop
+            using the app daily.
+          </p>
+        </section>
 
         <section aria-label="Account" className="space-y-3">
           <SectionLabel>Account</SectionLabel>

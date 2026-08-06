@@ -164,7 +164,7 @@ describe('rangeAdherence', () => {
 });
 
 describe('currentStreak', () => {
-  const fullDay = (dk: string, backfilled = false) => ({
+  const fullDay = (_dk: string, backfilled = false) => ({
     [scheduledDoseId('m1', '08:00')]: taken('m1', '08:00', backfilled),
     [scheduledDoseId('m1', '20:00')]: taken('m1', '20:00', backfilled),
   });
