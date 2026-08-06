@@ -171,7 +171,22 @@ export function seedDemoStore(): void {
     },
 
     settings: { gcal: DEFAULT_GCAL },
-    inbox: {},
+    inbox: {
+      'demo-inbox1': {
+        type: 'ptSession',
+        payload: {
+          kind: 'home',
+          exercises: [
+            { name: 'Quad sets', sets: 3, reps: 15 },
+            { name: 'Straight leg raises', sets: 3, reps: 10 },
+          ],
+          painPre: 4,
+          painPost: 2,
+        },
+        receivedAt: hoursAgo(1),
+        status: 'pending',
+      },
+    },
     agents: { 'demo-agent-uid': true },
     members: {
       'demo-user': { email: 'preview@mend.demo', joinedAt: daysAgo(21) },

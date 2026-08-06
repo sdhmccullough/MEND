@@ -2,6 +2,7 @@ import { useStore } from '../../store/useStore';
 import { Card, SectionLabel } from '../../components/ui/Card';
 import { formatEpochTime, formatFull } from '../../lib/dates';
 import { DoseChecklist } from '../meds/DoseChecklist';
+import { InboxCards } from '../inbox/InboxCards';
 import { PtCard } from '../pt/PtCard';
 import { PainQuickLog } from './PainQuickLog';
 
@@ -46,6 +47,8 @@ function NextAppointment() {
 export function TodayTab() {
   return (
     <div className="space-y-3">
+      <InboxCards />
+
       <NextAppointment />
 
       <DoseChecklist />
