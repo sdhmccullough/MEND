@@ -1,0 +1,45 @@
+# Adapted from the Firebase CLI template (PayDay sibling).
+# TODO(sterling): after `firebase init hosting:github`, replace MEND_PROJECT_ID
+# and the FIREBASE_SERVICE_ACCOUNT_MEND secret name with the generated values.
+name: Deploy to Firebase Hosting on PR
+on: pull_request
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+jobs:
+  test:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Date logic is timezone-sensitive by design; run the suite in two zones.
+        tz: [America/Denver, Asia/Tokyo]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+        env:
+          TZ: ${{ matrix.tz }}
+  build_and_preview:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MEND }}
+          projectId: MEND_PROJECT_ID

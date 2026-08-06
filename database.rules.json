@@ -1,0 +1,138 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "userHouseholds": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.isString() && newData.val().length < 128"
+      }
+    },
+    "invites": {
+      "$token": {
+        ".read": "auth != null && data.child('expiresAt').val() > now",
+        ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('createdBy').val() == auth.uid && root.child('households/' + newData.child('hid').val() + '/members/' + auth.uid).exists()) || (data.exists() && !newData.exists() && root.child('households/' + data.child('hid').val() + '/members/' + auth.uid).exists()))",
+        ".validate": "newData.child('hid').isString() && newData.child('expiresAt').isNumber()",
+        "usedBy": {
+          ".write": "auth != null && !data.exists() && newData.val() == auth.uid"
+        }
+      }
+    },
+    "households": {
+      "$hid": {
+        "members": {
+          ".read": "auth != null && data.child(auth.uid).exists()",
+          "$uid": {
+            ".write": "auth != null && ((newData.exists() && auth.uid == $uid && ($hid == auth.uid || (newData.child('inviteToken').isString() && root.child('invites/' + newData.child('inviteToken').val() + '/hid').val() == $hid && root.child('invites/' + newData.child('inviteToken').val() + '/expiresAt').val() > now && !root.child('invites/' + newData.child('inviteToken').val() + '/usedBy').exists()))) || (!newData.exists() && (auth.uid == $uid || root.child('households/' + $hid + '/meta/ownerUid').val() == auth.uid)))",
+            ".validate": "newData.child('email').isString() && newData.child('email').val().length < 256"
+          }
+        },
+        "meta": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "schemaVersion": {
+            ".validate": "newData.isNumber()"
+          }
+        },
+        "injury": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "title": { ".validate": "newData.isString() && newData.val().length < 256" },
+          "occurredOn": { ".validate": "newData.isString() && (newData.val() == '' || newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/))" },
+          "surgeryOn": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)" }
+        },
+        "settings": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()"
+        },
+        "hep": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()"
+        },
+        "meds": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$medId": {
+            "name": { ".validate": "newData.isString() && newData.val().length < 256" },
+            "schedule": {
+              "kind": { ".validate": "newData.val() == 'times' || newData.val() == 'interval' || newData.val() == 'prn'" },
+              "times": {
+                "$i": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{2}:[0-9]{2}$/)" }
+              },
+              "everyHours": { ".validate": "newData.isNumber() && newData.val() > 0" },
+              "startOn": { ".validate": "newData.isString() && (newData.val() == '' || newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/))" },
+              "endOn": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)" }
+            }
+          }
+        },
+        "doses": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$dateKey": {
+            ".validate": "$dateKey.matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)",
+            "$doseId": {
+              ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists() && !(data.child('backfilled').val() == true && !newData.exists())",
+              "medId": { ".validate": "newData.isString()" },
+              "plannedAt": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{2}:[0-9]{2}$/)" },
+              "takenAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+              "status": { ".validate": "newData.val() == 'taken' || newData.val() == 'skipped' || newData.val() == 'late' || newData.val() == 'pending'" },
+              "backfilled": { ".validate": "newData.isBoolean() && (data.val() != true || newData.val() == true)" },
+              "by": { ".validate": "newData.val() == auth.uid" },
+              "note": { ".validate": "newData.isString() && newData.val().length < 512" },
+              "$other": { ".validate": false }
+            }
+          }
+        },
+        "ptSessions": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$id": {
+            "at": { ".validate": "newData.isNumber() && newData.val() > 0" },
+            "kind": { ".validate": "newData.val() == 'clinic' || newData.val() == 'home'" },
+            "painPre": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10" },
+            "painPost": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10" },
+            "source": { ".validate": "newData.val() == 'manual' || newData.val() == 'hermes'" }
+          }
+        },
+        "metrics": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$dateKey": {
+            ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+            ".validate": "$dateKey.matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)",
+            "pain": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10" },
+            "notes": { ".validate": "newData.isString() && newData.val().length < 2048" }
+          }
+        },
+        "appointments": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$id": {
+            "title": { ".validate": "newData.isString() && newData.val().length < 512" },
+            "startAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+            "endAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+            "kind": { ".validate": "newData.val() == 'doctor' || newData.val() == 'pt' || newData.val() == 'imaging' || newData.val() == 'other'" },
+            "source": { ".validate": "newData.val() == 'gcal' || newData.val() == 'manual'" }
+          }
+        },
+        "agents": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$uid": {
+            ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+            ".validate": "newData.isBoolean()"
+          }
+        },
+        "inbox": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$id": {
+            ".write": "auth != null && (root.child('households/' + $hid + '/members/' + auth.uid).exists() || (root.child('households/' + $hid + '/agents/' + auth.uid).val() == true && (!data.exists() || data.child('status').val() == 'pending') && newData.exists() && newData.child('status').val() == 'pending'))",
+            "type": { ".validate": "newData.val() == 'ptSession' || newData.val() == 'doseLog' || newData.val() == 'metric'" },
+            "receivedAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+            "status": { ".validate": "newData.val() == 'pending' || newData.val() == 'applied' || newData.val() == 'dismissed'" },
+            "payload": {},
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    }
+  }
+}
