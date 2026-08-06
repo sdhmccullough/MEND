@@ -1,6 +1,6 @@
 # Adapted from the Firebase CLI template (PayDay sibling).
-# TODO(sterling): after `firebase init hosting:github`, replace MEND_PROJECT_ID
-# and the FIREBASE_SERVICE_ACCOUNT_MEND secret name with the generated values.
+# Secret FIREBASE_SERVICE_ACCOUNT_MEND_467F5 is created by
+# `firebase init hosting:github` (Phase 3 of the setup guide).
 name: Deploy to Firebase Hosting on merge
 on:
   push:
@@ -22,9 +22,9 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MEND }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MEND_467F5 }}
           channelId: live
-          projectId: MEND_PROJECT_ID
+          projectId: mend-467f5
   deploy_database_rules:
     # NOTE: needs the CI service account to hold the "Firebase Realtime Database
     # Admin" role — one-time grant in Cloud Console > IAM. Until then this job
@@ -50,7 +50,7 @@ jobs:
         if: steps.rules_changed.outputs.changed == 'true'
         run: |
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
-          npx firebase-tools@latest deploy --only database --project MEND_PROJECT_ID --non-interactive
+          npx firebase-tools@latest deploy --only database --project mend-467f5 --non-interactive
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MEND }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MEND_467F5 }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json

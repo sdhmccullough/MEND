@@ -1,6 +1,6 @@
 # Adapted from the Firebase CLI template (PayDay sibling).
-# TODO(sterling): after `firebase init hosting:github`, replace MEND_PROJECT_ID
-# and the FIREBASE_SERVICE_ACCOUNT_MEND secret name with the generated values.
+# Secret FIREBASE_SERVICE_ACCOUNT_MEND_467F5 is created by
+# `firebase init hosting:github` (Phase 3 of the setup guide).
 name: Deploy to Firebase Hosting on PR
 on: pull_request
 permissions:
@@ -41,5 +41,5 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MEND }}
-          projectId: MEND_PROJECT_ID
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MEND_467F5 }}
+          projectId: mend-467f5

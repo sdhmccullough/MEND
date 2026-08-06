@@ -2,18 +2,16 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
 
-// TODO(sterling): replace with the real config from Firebase console →
-// Project settings → General → Your apps. Keep authDomain on .web.app:
-// Hosting serves the same-origin /__/auth/* handler; the cross-origin
-// firebaseapp.com domain breaks redirect sign-in under storage partitioning.
 const firebaseConfig = {
-  apiKey: 'MEND_API_KEY',
-  authDomain: 'MEND_PROJECT_ID.web.app',
-  databaseURL: 'https://MEND_PROJECT_ID-default-rtdb.firebaseio.com',
-  projectId: 'MEND_PROJECT_ID',
-  storageBucket: 'MEND_PROJECT_ID.firebasestorage.app',
-  messagingSenderId: 'MEND_SENDER_ID',
-  appId: 'MEND_APP_ID',
+  apiKey: 'AIzaSyAO7YdkKkDtyKPM9fWGGB1FRmNx8oFV61k',
+  // Same-origin auth handler (Hosting serves /__/auth/*); the cross-origin
+  // firebaseapp.com domain breaks redirect sign-in under storage partitioning.
+  authDomain: 'mend-467f5.web.app',
+  databaseURL: 'https://mend-467f5-default-rtdb.firebaseio.com',
+  projectId: 'mend-467f5',
+  storageBucket: 'mend-467f5.firebasestorage.app',
+  messagingSenderId: '238537262774',
+  appId: '1:238537262774:web:56b7e27e4a184e44400817',
 };
 
 export const app = initializeApp(firebaseConfig);
