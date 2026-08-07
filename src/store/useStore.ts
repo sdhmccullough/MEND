@@ -15,6 +15,7 @@ import type {
   Routine,
   RoutineLog,
   Settings,
+  SpacingRule,
   Timer,
 } from '../lib/schema';
 import { DEFAULT_HEP, DEFAULT_INJURY, DEFAULT_SETTINGS } from '../lib/schema';
@@ -46,6 +47,8 @@ interface Store {
   // household data (mirrors of RTDB nodes, already normalized)
   injury: Injury;
   meds: Record<string, Med>;
+  /** Care-team instructions about spacing doses apart. */
+  spacing: Record<string, SpacingRule>;
   /** dateKey → doseId → record; only actioned doses are stored. */
   doses: Record<string, Record<string, DoseRecord>>;
   ptSessions: Record<string, PtSession>;
@@ -96,6 +99,7 @@ export const useStore = create<Store>((set) => ({
 
   injury: DEFAULT_INJURY,
   meds: {},
+  spacing: {},
   doses: {},
   ptSessions: {},
   metrics: {},

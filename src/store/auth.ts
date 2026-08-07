@@ -60,6 +60,7 @@ export function initAuth(): void {
         authReady: true,
         injury: DEFAULT_INJURY,
         meds: {},
+        spacing: {},
         doses: {},
         ptSessions: {},
         metrics: {},

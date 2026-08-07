@@ -40,6 +40,7 @@ import {
   normalizeRoutine,
   normalizeRoutineLogs,
   normalizeSettings,
+  normalizeSpacingRule,
   normalizeTimer,
   type Appointment,
   type DoseRecord,
@@ -51,6 +52,7 @@ import {
   type ProtocolPhase,
   type PtSession,
   type Routine,
+  type SpacingRule,
 } from '../lib/schema';
 import { todayKey } from '../lib/dates';
 import { scheduledDoseId } from '../lib/doses';
@@ -68,6 +70,7 @@ let currentHid: string | null = null;
 const CACHE_SLICES = [
   'injury',
   'meds',
+  'spacing',
   'doses',
   'ptSessions',
   'metrics',
@@ -100,6 +103,7 @@ function hydrateFromCache(hid: string): void {
     patchStore({
       injury: normalizeInjury(cached.injury),
       meds: normalizeKeyed(cached.meds, normalizeMed),
+      spacing: normalizeKeyed(cached.spacing, normalizeSpacingRule),
       doses: normalizeDoses(cached.doses),
       ptSessions: normalizeKeyed(cached.ptSessions, normalizePtSession),
       metrics: normalizeKeyed(cached.metrics, normalizeMetric),
@@ -176,6 +180,7 @@ export async function attachHousehold(hid: string): Promise<void> {
   const nodes: Array<[string, (v: unknown) => void]> = [
     ['injury', (v) => patchStore({ injury: normalizeInjury(v) })],
     ['meds', (v) => patchStore({ meds: normalizeKeyed(v, normalizeMed) })],
+    ['spacing', (v) => patchStore({ spacing: normalizeKeyed(v, normalizeSpacingRule) })],
     ['doses', (v) => patchStore({ doses: normalizeDoses(v) })],
     ['ptSessions', (v) => patchStore({ ptSessions: normalizeKeyed(v, normalizePtSession) })],
     ['metrics', (v) => patchStore({ metrics: normalizeKeyed(v, normalizeMetric) })],
@@ -259,6 +264,18 @@ export function saveMed(medId: string | null, med: Med): Promise<string> {
 
 export function setMedActive(medId: string, active: boolean): Promise<void> {
   return writing(update(hhRef(`meds/${medId}`), { active }));
+}
+
+export function saveSpacingRule(
+  ruleId: string | null,
+  rule: SpacingRule,
+): Promise<string> {
+  const id = ruleId ?? newKey();
+  return writing(update(hhRef(`spacing/${id}`), rule).then(() => id));
+}
+
+export function deleteSpacingRule(ruleId: string): Promise<void> {
+  return writing(remove(hhRef(`spacing/${ruleId}`)));
 }
 
 /** Archive = inactive + close the schedule window today, so past slots

@@ -75,6 +75,17 @@
             }
           }
         },
+        "spacing": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$ruleId": {
+            "medA": { ".validate": "newData.isString()" },
+            "medB": { ".validate": "newData.isString()" },
+            "hours": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 48" },
+            "note": { ".validate": "newData.isString() && newData.val().length < 512" },
+            "$other": { ".validate": false }
+          }
+        },
         "doses": {
           ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
           "$dateKey": {

@@ -3,6 +3,8 @@ import { useStore } from '../../store/useStore';
 import type { DoseRecord, Med } from '../../lib/schema';
 import { doseTextForDate } from '../../lib/doses';
 import { medSupply } from '../../lib/supply';
+import { rulesForMed } from '../../lib/spacing';
+import type { SpacingRule } from '../../lib/schema';
 import { formatHHMM12, todayKey } from '../../lib/dates';
 import { Card, SectionLabel } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -19,18 +21,23 @@ function scheduleSummary(med: Med): string {
 function MedRow({
   med,
   medId,
+  meds,
   doses,
+  spacing,
   onEdit,
 }: {
   med: Med;
   medId: string;
+  meds: Record<string, Med>;
   doses: Record<string, Record<string, DoseRecord>>;
+  spacing: Record<string, SpacingRule>;
   onEdit: () => void;
 }) {
   const today = todayKey();
   const currentDose = doseTextForDate(med, today);
   const tapering = currentDose !== med.doseText;
   const supply = medSupply(med, medId, doses, Date.now());
+  const rules = rulesForMed(medId, spacing, meds);
   return (
     <button
       type="button"
@@ -55,6 +62,11 @@ function MedRow({
           {supply.low ? ' · running low' : ''}
         </span>
       ) : null}
+      {rules.map((r) => (
+        <span key={r.otherMedName} className="mt-1 block text-xs text-warn">
+          Keep {r.hours} h from {r.otherMedName}
+        </span>
+      ))}
     </button>
   );
 }
@@ -62,6 +74,7 @@ function MedRow({
 export function MedsTab() {
   const meds = useStore((s) => s.meds);
   const doses = useStore((s) => s.doses);
+  const spacing = useStore((s) => s.spacing);
   const [editor, setEditor] = useState<{ medId: string | null; key: number } | null>(null);
   const [backfillOpen, setBackfillOpen] = useState(false);
 
@@ -97,7 +110,9 @@ export function MedsTab() {
                 <MedRow
                   med={med}
                   medId={id}
+                  meds={meds}
                   doses={doses}
+                  spacing={spacing}
                   onEdit={() => openEditor(id)}
                 />
               </li>
@@ -115,7 +130,9 @@ export function MedsTab() {
                 <MedRow
                   med={med}
                   medId={id}
+                  meds={meds}
                   doses={doses}
+                  spacing={spacing}
                   onEdit={() => openEditor(id)}
                 />
               </li>

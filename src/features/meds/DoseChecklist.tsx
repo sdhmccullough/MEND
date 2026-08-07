@@ -11,6 +11,7 @@ import {
 } from '../../lib/doses';
 import { currentStreak, dayAdherence } from '../../lib/adherence';
 import { medSupply } from '../../lib/supply';
+import { spacingConflicts, type SpacingConflict } from '../../lib/spacing';
 import { formatEpochTime, formatHHMM12, nowHHMM, parseDateKey, todayKey } from '../../lib/dates';
 import { Card, SectionLabel } from '../../components/ui/Card';
 import { Dialog } from '../../components/ui/Dialog';
@@ -173,11 +174,45 @@ function SupplyTail({ medId }: { medId: string }) {
   );
 }
 
+/** Care-team spacing instruction the app was told about, e.g. "keep 2 h
+ * between oxycodone and pregabalin". Advisory only — logging still goes
+ * through if the human says so. */
+function SpacingWarning({ conflicts }: { conflicts: SpacingConflict[] }) {
+  if (conflicts.length === 0) return null;
+  const c = conflicts[0];
+  return (
+    <span className="mt-0.5 block text-xs font-medium text-warn">
+      Wait {c.minutesRemaining} min — keep {c.hours} h from {c.otherMedName} (last{' '}
+      {formatEpochTime(c.lastTakenAt)})
+    </span>
+  );
+}
+
 export function DoseChecklist() {
   const meds = useStore((s) => s.meds);
   const doses = useStore((s) => s.doses);
+  const spacing = useStore((s) => s.spacing);
   const today = todayKey();
   const now = Date.now();
+  const [spacingPrompt, setSpacingPrompt] = useState<{
+    conflicts: SpacingConflict[];
+    medName: string;
+    proceed: () => void;
+  } | null>(null);
+
+  /** Run the log, but ask first when a spacing rule is unsatisfied. */
+  const guarded = (medId: string, run: () => void) => {
+    const conflicts = spacingConflicts(medId, spacing, meds, doses, Date.now());
+    if (conflicts.length === 0) {
+      run();
+      return;
+    }
+    setSpacingPrompt({
+      conflicts,
+      medName: meds[medId]?.name ?? 'This medication',
+      proceed: run,
+    });
+  };
 
   // Cheap enough to recompute per render — a handful of meds, one day.
   const activeMeds = Object.fromEntries(
@@ -197,9 +232,11 @@ export function DoseChecklist() {
 
   const tap = (view: DoseView) => {
     if (view.status === 'pending' || view.status === 'overdue') {
-      logDoseTaken(view.medId, today, view.slot as string).catch(() =>
-        toastError('Not synced', 'Try again.'),
-      );
+      guarded(view.medId, () => {
+        logDoseTaken(view.medId, today, view.slot as string).catch(() =>
+          toastError('Not synced', 'Try again.'),
+        );
+      });
     } else {
       setOptionsFor(view);
     }
@@ -253,6 +290,11 @@ export function DoseChecklist() {
                     {v.slot ? formatHHMM12(v.slot) : ''} — {statusLine(v)}
                     <SupplyTail medId={v.medId} />
                   </span>
+                  {v.status === 'pending' || v.status === 'overdue' ? (
+                    <SpacingWarning
+                      conflicts={spacingConflicts(v.medId, spacing, meds, doses, now)}
+                    />
+                  ) : null}
                 </span>
               </button>
               {/* Visible options button — a long-press is hard to land
@@ -300,6 +342,9 @@ export function DoseChecklist() {
                     {med.schedule.kind === 'times' ? ' · not on today’s schedule' : ''}
                     <SupplyTail medId={medId} />
                   </span>
+                  <SpacingWarning
+                    conflicts={spacingConflicts(medId, spacing, meds, doses, now)}
+                  />
                 </span>
                 {med.variableDose ? (
                   // Dose is a range (e.g. 1–2 tablets): record how many, so
@@ -311,9 +356,11 @@ export function DoseChecklist() {
                         variant={due.dueNow && n === 1 ? 'primary' : 'outline'}
                         className="!min-h-11 !px-3"
                         onClick={() =>
-                          logPrnDose(medId, '', n)
-                            .then(() => toast('Dose logged', `${med.name} · ${n}`))
-                            .catch(() => toastError('Not synced', 'Try again.'))
+                          guarded(medId, () => {
+                            logPrnDose(medId, '', n)
+                              .then(() => toast('Dose logged', `${med.name} · ${n}`))
+                              .catch(() => toastError('Not synced', 'Try again.'));
+                          })
                         }
                         aria-label={`Log ${n} ${n === 1 ? 'tablet' : 'tablets'} of ${med.name}`}
                       >
@@ -326,9 +373,11 @@ export function DoseChecklist() {
                     variant={due.dueNow ? 'primary' : 'outline'}
                     className="!min-h-11 shrink-0"
                     onClick={() =>
-                      logPrnDose(medId)
-                        .then(() => toast('Dose logged', med.name))
-                        .catch(() => toastError('Not synced', 'Try again.'))
+                      guarded(medId, () => {
+                        logPrnDose(medId)
+                          .then(() => toast('Dose logged', med.name))
+                          .catch(() => toastError('Not synced', 'Try again.'));
+                      })
                     }
                   >
                     Take now
@@ -347,6 +396,54 @@ export function DoseChecklist() {
           dateKey={today}
           onClose={() => setOptionsFor(null)}
         />
+      ) : null}
+
+      {spacingPrompt ? (
+        <Dialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setSpacingPrompt(null);
+          }}
+          title="Check the spacing"
+        >
+          <div className="space-y-3 text-sm">
+            {spacingPrompt.conflicts.map((c) => (
+              <p key={c.otherMedId}>
+                Your care team asked for <strong>{c.hours} hours</strong> between{' '}
+                {spacingPrompt.medName} and {c.otherMedName}.
+                <span className="mt-1 block text-muted">
+                  {c.otherMedName} was taken at {formatEpochTime(c.lastTakenAt)} — about{' '}
+                  <strong className="text-warn">{c.minutesRemaining} minutes</strong> to go
+                  (clear at {formatEpochTime(c.clearAt)}).
+                </span>
+                {c.note ? <span className="mt-1 block text-xs text-muted">{c.note}</span> : null}
+              </p>
+            ))}
+            <p className="text-xs text-muted">
+              If you already took it, log it anyway — the record should show what
+              actually happened.
+            </p>
+            <div className="flex flex-col gap-2 pt-1">
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => setSpacingPrompt(null)}
+              >
+                Wait
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  spacingPrompt.proceed();
+                  setSpacingPrompt(null);
+                }}
+              >
+                Log it anyway
+              </Button>
+            </div>
+          </div>
+        </Dialog>
       ) : null}
     </Card>
   );

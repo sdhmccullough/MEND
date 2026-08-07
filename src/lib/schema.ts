@@ -67,6 +67,20 @@ export interface Med {
   filledOn: string | null; // dateKey
 }
 
+// ---- dose spacing ------------------------------------------------------------
+// "Keep N hours between med A and med B" — an instruction from the care
+// team, recorded here so the app can remind at the moment of logging.
+// Mend does no interaction checking of its own; these are only the rules
+// a human entered.
+
+export interface SpacingRule {
+  medA: string;
+  medB: string;
+  hours: number;
+  /** Where the instruction came from, shown with the warning. */
+  note: string;
+}
+
 // ---- doses -----------------------------------------------------------------
 // Stored under doses/$dateKey/$doseId. Only ACTIONED doses are stored
 // (taken/skipped + backfill); pending/overdue are virtual view states
@@ -408,6 +422,17 @@ export function normalizeMed(v: unknown): Med {
     variableDose: o.variableDose === true,
     fillQuantity: fill !== null && fill > 0 ? Math.round(fill) : null,
     filledOn: strOrNull(o.filledOn),
+  };
+}
+
+export function normalizeSpacingRule(v: unknown): SpacingRule {
+  const o = rec(v);
+  const hours = numOrNull(o.hours);
+  return {
+    medA: str(o.medA),
+    medB: str(o.medB),
+    hours: hours !== null && hours > 0 ? hours : 0,
+    note: str(o.note),
   };
 }
 
