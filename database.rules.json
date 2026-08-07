@@ -135,6 +135,10 @@
             "timerMinutes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 600" }
           }
         },
+        "reminderState": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()"
+        },
         "timers": {
           ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
           ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",

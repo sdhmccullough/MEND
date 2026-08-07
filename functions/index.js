@@ -14,6 +14,20 @@ admin.initializeApp();
 const TZ = 'America/Denver';
 const WINDOW_MIN = 15;
 
+// Routine nudges only during waking hours — ice every 90 minutes must not
+// ping at 3 AM.
+const QUIET_BEFORE_MIN = 7 * 60; // 07:00
+const QUIET_AFTER_MIN = 21 * 60; // 21:00
+const WAKING_MINUTES = 16 * 60;
+
+/** Mirrors lib/routines.effectiveCadence: a routine with a daily target
+ * but no stated interval gets one spread over a waking day. */
+function effectiveCadence(routine) {
+  if (routine.everyMinutes > 0) return routine.everyMinutes;
+  if (routine.targetPerDay > 1) return Math.floor(WAKING_MINUTES / routine.targetPerDay);
+  return 0;
+}
+
 function localParts(date, tz) {
   const dateKey = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(date);
   const hm = new Intl.DateTimeFormat('en-GB', {
@@ -118,6 +132,57 @@ exports.doseReminders = onSchedule(
               notification: { icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' },
             },
           }),
+        );
+      }
+
+      // ---- routine care (ice, sling, pendulums) ----
+      // Due = daily target unmet and the cadence has elapsed since the last
+      // rep. Re-nudge no more often than the cadence itself, so a routine
+      // left undone doesn't pester every 15 minutes.
+      if (minutes < QUIET_BEFORE_MIN || minutes > QUIET_AFTER_MIN) continue;
+
+      const dayLogs = Object.values((hh.routineLogs ?? {})[dateKey] ?? {});
+      const reminded = hh.reminderState ?? {};
+      for (const [routineId, routine] of Object.entries(hh.routines ?? {})) {
+        if (!routine || routine.active === false) continue;
+        const mine = dayLogs.filter((l) => l && l.routineId === routineId);
+        if (mine.length >= (routine.targetPerDay || 1)) continue;
+
+        const cadence = effectiveCadence(routine);
+        if (cadence === 0) continue;
+        const lastRep = mine.reduce((max, l) => (l.at > max ? l.at : max), 0);
+        const minsSinceRep = lastRep ? (now - lastRep) / 60_000 : Infinity;
+        if (minsSinceRep < cadence) continue;
+
+        const lastNudge = reminded[routineId]?.lastAt ?? 0;
+        if ((now - lastNudge) / 60_000 < cadence) continue;
+
+        const left = (routine.targetPerDay || 1) - mine.length;
+        sends.push(
+          db
+            .ref(`households/${hid}/reminderState/${routineId}/lastAt`)
+            .set(now)
+            .then(() =>
+              tokens.length
+                ? admin.messaging().sendEachForMulticast({
+                    tokens,
+                    notification: {
+                      title: `Mend — ${routine.label}`,
+                      body:
+                        lastRep === 0
+                          ? `Not done yet today · ${left} to go.`
+                          : `Due again · ${mine.length}/${routine.targetPerDay} done.`,
+                    },
+                    webpush: {
+                      fcmOptions: { link: 'https://mend-467f5.web.app/?tab=today' },
+                      notification: {
+                        icon: '/icons/icon-192.png',
+                        badge: '/icons/icon-192.png',
+                      },
+                    },
+                  })
+                : undefined,
+            ),
         );
       }
     }
