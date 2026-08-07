@@ -60,6 +60,9 @@ import { runMigrationIfNeeded } from './migrate';
 
 let subscriptions: Unsubscribe[] = [];
 let currentHid: string | null = null;
+/** Live connection state from .info/connected, so a rejected write isn't
+ * misreported as being offline. */
+let connected = true;
 
 // ---- offline cache --------------------------------------------------------
 // RTDB's web SDK has no disk persistence, so we mirror household slices to
@@ -218,7 +221,8 @@ export async function attachHousehold(hid: string): Promise<void> {
   // Connection state drives the indicator.
   subscriptions.push(
     onValue(ref(db, '.info/connected'), (snap) => {
-      patchStore({ syncStatus: snap.val() === true ? 'synced' : 'offline' });
+      connected = snap.val() === true;
+      patchStore({ syncStatus: connected ? 'synced' : 'offline' });
     }),
   );
 
@@ -242,7 +246,12 @@ function writing<T>(p: Promise<T>): Promise<T> {
       return v;
     },
     (err) => {
-      patchStore({ syncStatus: 'offline' });
+      // A rejected write (bad shape, rules) is not a lost connection —
+      // claiming "Offline" sent us chasing the network instead of the
+      // actual error. Trust .info/connected for that, and surface the
+      // real reason here.
+      console.error('Write rejected:', err);
+      patchStore({ syncStatus: connected ? 'synced' : 'offline' });
       throw err;
     },
   );
