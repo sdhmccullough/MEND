@@ -120,7 +120,19 @@
           "$routineId": {
             "label": { ".validate": "newData.isString() && newData.val().length < 128" },
             "targetPerDay": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 48" },
-            "everyMinutes": { ".validate": "newData.isNumber() && newData.val() >= 0" }
+            "everyMinutes": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "timerMinutes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 600" }
+          }
+        },
+        "timers": {
+          ".read": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('households/' + $hid + '/members/' + auth.uid).exists()",
+          "$routineId": {
+            "label": { ".validate": "newData.isString() && newData.val().length < 128" },
+            "startedAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+            "dueAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+            "notifiedAt": { ".validate": "newData.isNumber() || newData.val() == null" },
+            "$other": { ".validate": false }
           }
         },
         "routineLogs": {

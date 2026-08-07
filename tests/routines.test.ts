@@ -1,12 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { routineStatuses, sinceLabel } from '../src/lib/routines';
+import {
+  countdownLabel,
+  routineStatuses,
+  secondsLeft,
+  sinceLabel,
+} from '../src/lib/routines';
 import type { Routine, RoutineLog } from '../src/lib/schema';
 
 const NOW = new Date(2026, 7, 7, 14, 0).getTime();
 const minutesAgo = (n: number) => NOW - n * 60_000;
 
 function routine(overrides: Partial<Routine> = {}): Routine {
-  return { label: 'Ice', targetPerDay: 8, everyMinutes: 90, active: true, order: 1, ...overrides };
+  return {
+    label: 'Ice',
+    targetPerDay: 8,
+    everyMinutes: 90,
+    timerMinutes: 30,
+    active: true,
+    order: 1,
+    ...overrides,
+  };
 }
 function log(routineId: string, at: number): RoutineLog {
   return { routineId, at, by: 'u1' };
@@ -64,6 +77,21 @@ describe('routineStatuses', () => {
       NOW,
     );
     expect(list.map((s) => s.routine.label)).toEqual(['A', 'B']);
+  });
+});
+
+describe('countdown', () => {
+  it('counts seconds down and goes negative once elapsed', () => {
+    expect(secondsLeft(undefined, NOW)).toBeNull();
+    expect(secondsLeft(NOW + 90_000, NOW)).toBe(90);
+    expect(secondsLeft(NOW - 30_000, NOW)).toBe(-30);
+  });
+
+  it('formats mm:ss and floors at zero', () => {
+    expect(countdownLabel(1471)).toBe('24:31');
+    expect(countdownLabel(60)).toBe('1:00');
+    expect(countdownLabel(5)).toBe('0:05');
+    expect(countdownLabel(-42)).toBe('0:00');
   });
 });
 

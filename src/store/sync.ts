@@ -40,6 +40,7 @@ import {
   normalizeRoutine,
   normalizeRoutineLogs,
   normalizeSettings,
+  normalizeTimer,
   type Appointment,
   type DoseRecord,
   type Exercise,
@@ -76,6 +77,7 @@ const CACHE_SLICES = [
   'photos',
   'routines',
   'routineLogs',
+  'timers',
   'protocol',
   'settings',
   'inbox',
@@ -107,6 +109,7 @@ function hydrateFromCache(hid: string): void {
       photos: normalizePhotos(cached.photos),
       routines: normalizeKeyed(cached.routines, normalizeRoutine),
       routineLogs: normalizeRoutineLogs(cached.routineLogs),
+      timers: normalizeKeyed(cached.timers, normalizeTimer),
       protocol: normalizeKeyed(cached.protocol, normalizePhase),
       settings: normalizeSettings(cached.settings),
       inbox: normalizeKeyed(cached.inbox, normalizeInboxItem),
@@ -185,6 +188,7 @@ export async function attachHousehold(hid: string): Promise<void> {
     ['photos', (v) => patchStore({ photos: normalizePhotos(v) })],
     ['routines', (v) => patchStore({ routines: normalizeKeyed(v, normalizeRoutine) })],
     ['routineLogs', (v) => patchStore({ routineLogs: normalizeRoutineLogs(v) })],
+    ['timers', (v) => patchStore({ timers: normalizeKeyed(v, normalizeTimer) })],
     ['protocol', (v) => patchStore({ protocol: normalizeKeyed(v, normalizePhase) })],
     ['settings', (v) => patchStore({ settings: normalizeSettings(v) })],
     ['inbox', (v) => patchStore({ inbox: normalizeKeyed(v, normalizeInboxItem) })],
@@ -365,6 +369,30 @@ export function logRoutine(routineId: string, dateKey: string): Promise<void> {
 /** Undo the most recent rep (mis-taps happen one-handed). */
 export function undoRoutineLog(dateKey: string, logId: string): Promise<void> {
   return writing(remove(hhRef(`routineLogs/${dateKey}/${logId}`)));
+}
+
+/** Start (or restart) a routine's countdown. Server-side so the alert
+ * fires from the push function even with the app closed, and so both
+ * phones see the same clock. */
+export function startRoutineTimer(
+  routineId: string,
+  label: string,
+  minutes: number,
+): Promise<void> {
+  const now = Date.now();
+  return writing(
+    update(hhRef(`timers/${routineId}`), {
+      label,
+      startedAt: now,
+      dueAt: now + minutes * 60_000,
+      notifiedAt: null,
+      by: uid() ?? null,
+    }),
+  );
+}
+
+export function cancelRoutineTimer(routineId: string): Promise<void> {
+  return writing(remove(hhRef(`timers/${routineId}`)));
 }
 
 export function saveRoutine(routineId: string | null, routine: Routine): Promise<string> {

@@ -137,6 +137,8 @@ export interface Routine {
   targetPerDay: number;
   /** Suggested gap between reps, minutes; 0 = no cadence. */
   everyMinutes: number;
+  /** Countdown to run when a rep starts (ice = 30); 0 = no timer. */
+  timerMinutes: number;
   active: boolean;
   order: number;
 }
@@ -144,6 +146,17 @@ export interface Routine {
 export interface RoutineLog {
   routineId: string;
   at: number;
+  by: string;
+}
+
+/** A running countdown, one per routine. Stored server-side so the push
+ * function can fire the alert even with the app closed — and so both
+ * phones see the same timer. */
+export interface Timer {
+  label: string;
+  startedAt: number;
+  dueAt: number;
+  notifiedAt: number | null;
   by: string;
 }
 
@@ -472,12 +485,25 @@ export function normalizeRoutine(v: unknown): Routine {
   const o = rec(v);
   const target = numOrNull(o.targetPerDay);
   const every = numOrNull(o.everyMinutes);
+  const timer = numOrNull(o.timerMinutes);
   return {
     label: str(o.label),
     targetPerDay: target !== null && target > 0 ? Math.round(target) : 1,
     everyMinutes: every !== null && every > 0 ? Math.round(every) : 0,
+    timerMinutes: timer !== null && timer > 0 ? Math.round(timer) : 0,
     active: o.active !== false,
     order: num(o.order),
+  };
+}
+
+export function normalizeTimer(v: unknown): Timer {
+  const o = rec(v);
+  return {
+    label: str(o.label),
+    startedAt: num(o.startedAt),
+    dueAt: num(o.dueAt),
+    notifiedAt: numOrNull(o.notifiedAt),
+    by: str(o.by),
   };
 }
 

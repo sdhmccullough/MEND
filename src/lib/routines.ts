@@ -50,6 +50,18 @@ export function routineStatuses(
     });
 }
 
+/** Seconds left on a countdown; negative once it's up, null if none. */
+export function secondsLeft(dueAt: number | undefined, now: number): number | null {
+  if (dueAt === undefined) return null;
+  return Math.round((dueAt - now) / 1000);
+}
+
+/** "24:31" counting down, "0:00" once elapsed. */
+export function countdownLabel(seconds: number): string {
+  const s = Math.max(0, seconds);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 /** "47m ago" / "2h 10m ago" / "not yet today". */
 export function sinceLabel(minutesSince: number | null): string {
   if (minutesSince === null) return 'not yet today';

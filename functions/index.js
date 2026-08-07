@@ -32,6 +32,46 @@ exports.setHouseholdClaim = onValueCreated(
   },
 );
 
+// Routine countdowns (the 30-minute ice timer). Runs every minute so the
+// alert lands close to the mark; the client can't be relied on because
+// the phone is usually locked while the ice is on.
+exports.timerAlerts = onSchedule(
+  { schedule: 'every 1 minutes', timeZone: TZ, region: 'us-central1' },
+  async () => {
+    const db = admin.database();
+    const households = (await db.ref('households').get()).val() ?? {};
+    const now = Date.now();
+    const work = [];
+
+    for (const [hid, hh] of Object.entries(households)) {
+      const tokens = Object.values(hh.settings?.fcmTokens ?? {})
+        .map((t) => t && t.token)
+        .filter(Boolean);
+      for (const [routineId, timer] of Object.entries(hh.timers ?? {})) {
+        if (!timer || timer.notifiedAt || !timer.dueAt || timer.dueAt > now) continue;
+        // Stamp first: a duplicate push is worse than a missed retry.
+        work.push(
+          db.ref(`households/${hid}/timers/${routineId}/notifiedAt`).set(now).then(() => {
+            if (tokens.length === 0) return undefined;
+            return admin.messaging().sendEachForMulticast({
+              tokens,
+              notification: {
+                title: 'Mend — timer done',
+                body: `${timer.label || 'Timer'}: time's up.`,
+              },
+              webpush: {
+                fcmOptions: { link: 'https://mend-467f5.web.app/?tab=today' },
+                notification: { icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' },
+              },
+            });
+          }),
+        );
+      }
+    }
+    await Promise.all(work);
+  },
+);
+
 exports.doseReminders = onSchedule(
   { schedule: `every ${WINDOW_MIN} minutes`, timeZone: TZ, region: 'us-central1' },
   async () => {

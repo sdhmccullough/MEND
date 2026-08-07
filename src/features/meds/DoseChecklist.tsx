@@ -10,6 +10,7 @@ import {
   type DoseView,
 } from '../../lib/doses';
 import { currentStreak, dayAdherence } from '../../lib/adherence';
+import { medSupply } from '../../lib/supply';
 import { formatEpochTime, formatHHMM12, nowHHMM, parseDateKey, todayKey } from '../../lib/dates';
 import { Card, SectionLabel } from '../../components/ui/Card';
 import { Dialog } from '../../components/ui/Dialog';
@@ -157,6 +158,21 @@ function DoseOptionsDialog({
   );
 }
 
+/** "≈17 left" appended to a dose line, amber when the bottle is running
+ * down. Silent for meds without fill data. */
+function SupplyTail({ medId }: { medId: string }) {
+  const med = useStore((s) => s.meds[medId]);
+  const doses = useStore((s) => s.doses);
+  if (!med) return null;
+  const supply = medSupply(med, medId, doses, Date.now());
+  if (!supply) return null;
+  return (
+    <span className={supply.low ? 'font-medium text-warn' : ''}>
+      {' · '}≈{supply.remaining} left
+    </span>
+  );
+}
+
 export function DoseChecklist() {
   const meds = useStore((s) => s.meds);
   const doses = useStore((s) => s.doses);
@@ -235,6 +251,7 @@ export function DoseChecklist() {
                     className={`block text-xs ${v.status === 'overdue' ? 'font-medium text-warn' : 'text-muted'}`}
                   >
                     {v.slot ? formatHHMM12(v.slot) : ''} — {statusLine(v)}
+                    <SupplyTail medId={v.medId} />
                   </span>
                 </span>
               </button>
@@ -281,6 +298,7 @@ export function DoseChecklist() {
                         : ` · next ${formatEpochTime(due.dueAt)}`
                       : ''}
                     {med.schedule.kind === 'times' ? ' · not on today’s schedule' : ''}
+                    <SupplyTail medId={medId} />
                   </span>
                 </span>
                 {med.variableDose ? (

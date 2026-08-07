@@ -15,6 +15,7 @@ import type {
   Routine,
   RoutineLog,
   Settings,
+  Timer,
 } from '../lib/schema';
 import { DEFAULT_HEP, DEFAULT_INJURY, DEFAULT_SETTINGS } from '../lib/schema';
 
@@ -58,6 +59,8 @@ interface Store {
   routines: Record<string, Routine>;
   /** dateKey → logId → routine rep. */
   routineLogs: Record<string, Record<string, RoutineLog>>;
+  /** routineId → running countdown. */
+  timers: Record<string, Timer>;
   protocol: Record<string, ProtocolPhase>;
   settings: Settings;
   inbox: Record<string, InboxItem>;
@@ -102,6 +105,7 @@ export const useStore = create<Store>((set) => ({
   photos: {},
   routines: {},
   routineLogs: {},
+  timers: {},
   protocol: {},
   settings: DEFAULT_SETTINGS,
   inbox: {},

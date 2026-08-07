@@ -69,6 +69,7 @@ export function initAuth(): void {
         photos: {},
         routines: {},
         routineLogs: {},
+        timers: {},
         protocol: {},
         settings: DEFAULT_SETTINGS,
         inbox: {},

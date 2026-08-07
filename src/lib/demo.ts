@@ -188,11 +188,19 @@ export function seedDemoStore(): void {
     },
 
     routines: {
-      'demo-r1': { label: 'Ice 30 min', targetPerDay: 8, everyMinutes: 90, active: true, order: 1 },
+      'demo-r1': {
+        label: 'Ice 30 min',
+        targetPerDay: 8,
+        everyMinutes: 90,
+        timerMinutes: 30,
+        active: true,
+        order: 1,
+      },
       'demo-r2': {
         label: 'Elbow out of sling',
         targetPerDay: 3,
         everyMinutes: 0,
+        timerMinutes: 0,
         active: true,
         order: 2,
       },
@@ -202,6 +210,7 @@ export function seedDemoStore(): void {
         'demo-rl1': { routineId: 'demo-r1', at: hoursAgo(2), by: 'demo-user' },
       },
     },
+    timers: {},
     protocol: {
       'demo-p1': {
         label: 'Immobilization',
