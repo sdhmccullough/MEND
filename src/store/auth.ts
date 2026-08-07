@@ -4,13 +4,17 @@
 
 import {
   GoogleAuthProvider,
+  browserLocalPersistence,
   getRedirectResult,
+  indexedDBLocalPersistence,
   onAuthStateChanged,
+  setPersistence,
   signInWithPopup,
   signInWithRedirect,
   signOut,
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { isStandalone } from '../lib/install';
 import { patchStore, readStore, useStore } from './useStore';
 import {
   attachHousehold,
@@ -40,6 +44,14 @@ export function initAuth(): void {
     seedDemoStore();
     return;
   }
+
+  // Be explicit about persistence rather than trusting the default: the
+  // session must survive an installed-PWA relaunch, and falling back to
+  // localStorage keeps iOS working where IndexedDB is unavailable.
+  // Firebase queues the calls below until this resolves.
+  void setPersistence(auth, indexedDBLocalPersistence).catch(() =>
+    setPersistence(auth, browserLocalPersistence).catch(() => undefined),
+  );
 
   // Capture an invite token arriving via link, then clean the URL.
   const params = new URLSearchParams(location.search);
@@ -119,6 +131,13 @@ export function initAuth(): void {
 
 export async function signIn(): Promise<void> {
   patchStore({ authError: null });
+  // Installed PWAs (iOS especially) handle popups badly — the window opens
+  // outside the app or is blocked outright. Go straight to redirect there;
+  // Hosting serves the same-origin /__/auth handler, so it comes back clean.
+  if (isStandalone()) {
+    await signInWithRedirect(auth, provider);
+    return;
+  }
   try {
     await signInWithPopup(auth, provider);
   } catch (err) {

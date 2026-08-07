@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
-import {
-  cancelRoutineTimer,
-  logRoutine,
-  startRoutineTimer,
-  undoRoutineLog,
-} from '../../store/sync';
+import { cancelRoutineTimer, logRoutine, undoRoutineLog } from '../../store/sync';
 import {
   countdownLabel,
   routineStatuses,
@@ -47,14 +42,14 @@ export function RoutineChips() {
 
   const logRep = (s: RoutineStatus) => {
     setBusy(s.id);
-    logRoutine(s.id, today)
-      .then(() => {
-        if (s.routine.timerMinutes > 0) {
-          return startRoutineTimer(s.id, s.routine.label, s.routine.timerMinutes);
-        }
-        return undefined;
-      })
-      .catch(() => toastError('Not synced', 'Try again.'))
+    logRoutine(
+      s.id,
+      today,
+      s.routine.timerMinutes > 0
+        ? { label: s.routine.label, minutes: s.routine.timerMinutes }
+        : undefined,
+    )
+      .catch(() => toastError('Not saved', 'Check your connection and try again.'))
       .finally(() => setBusy(null));
   };
 

@@ -382,39 +382,37 @@ export function saveMetric(
 
 // ---- routines ---------------------------------------------------------------------
 
-export function logRoutine(routineId: string, dateKey: string): Promise<void> {
-  return writing(
-    update(hhRef(`routineLogs/${dateKey}/${newKey()}`), {
+/** Log a rep and, for a timed routine, start its countdown — in ONE write.
+ * These used to be two chained writes, and a page reload landing between
+ * them left the rep logged with no timer running. */
+export function logRoutine(
+  routineId: string,
+  dateKey: string,
+  timer?: { label: string; minutes: number },
+): Promise<void> {
+  const now = Date.now();
+  const updates: Record<string, unknown> = {
+    [`routineLogs/${dateKey}/${newKey()}`]: {
       routineId,
       at: serverTimestamp(),
       by: uid() ?? null,
-    }),
-  );
+    },
+  };
+  if (timer && timer.minutes > 0) {
+    updates[`timers/${routineId}`] = {
+      label: timer.label,
+      startedAt: now,
+      dueAt: now + timer.minutes * 60_000,
+      notifiedAt: null,
+      by: uid() ?? null,
+    };
+  }
+  return writing(update(hhRef(), updates));
 }
 
 /** Undo the most recent rep (mis-taps happen one-handed). */
 export function undoRoutineLog(dateKey: string, logId: string): Promise<void> {
   return writing(remove(hhRef(`routineLogs/${dateKey}/${logId}`)));
-}
-
-/** Start (or restart) a routine's countdown. Server-side so the alert
- * fires from the push function even with the app closed, and so both
- * phones see the same clock. */
-export function startRoutineTimer(
-  routineId: string,
-  label: string,
-  minutes: number,
-): Promise<void> {
-  const now = Date.now();
-  return writing(
-    update(hhRef(`timers/${routineId}`), {
-      label,
-      startedAt: now,
-      dueAt: now + minutes * 60_000,
-      notifiedAt: null,
-      by: uid() ?? null,
-    }),
-  );
 }
 
 export function cancelRoutineTimer(routineId: string): Promise<void> {

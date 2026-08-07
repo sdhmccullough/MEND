@@ -8,10 +8,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      // autoUpdate, not prompt: a dismissed or unnoticed update prompt left
-      // the phone running old code (a logged dose silently skipped its new
-      // timer). For a daily-use medical record, current beats controlled.
-      registerType: 'autoUpdate',
+      // 'prompt' keeps the new worker waiting until the app explicitly
+      // applies it. autoUpdate was tried and reverted: combined with our own
+      // update call it reloaded the page in a loop, which flashed the
+      // sign-in screen over and over and cut off in-flight writes.
+      // UpdatePrompt applies updates itself, once, with a cooldown.
+      registerType: 'prompt',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       manifest: {
         id: '/',
