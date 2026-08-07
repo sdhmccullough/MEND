@@ -5,6 +5,7 @@ import { DoseChecklist } from '../meds/DoseChecklist';
 import { InboxCards } from '../inbox/InboxCards';
 import { PtCard } from '../pt/PtCard';
 import { PainQuickLog, SaneQuickLog } from './PainQuickLog';
+import { ActiveTimers } from './ActiveTimers';
 import { RoutineChips } from './RoutineChips';
 import { StatusCard } from './StatusCard';
 
@@ -49,6 +50,8 @@ function NextAppointment() {
 export function TodayTab() {
   return (
     <div className="space-y-3">
+      <ActiveTimers />
+
       <InboxCards />
 
       <StatusCard />

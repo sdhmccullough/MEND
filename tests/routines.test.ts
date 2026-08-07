@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   countdownLabel,
+  effectiveCadence,
   routineStatuses,
   secondsLeft,
   sinceLabel,
@@ -57,13 +58,24 @@ describe('routineStatuses', () => {
     expect(s.due).toBe(false);
   });
 
-  it('cadence-free routines are due whenever the target is unmet', () => {
-    const [s] = routineStatuses(
-      { elbow: routine({ label: 'Elbow', targetPerDay: 3, everyMinutes: 0 }) },
-      { a: log('elbow', minutesAgo(5)) },
-      NOW,
-    );
-    expect(s.due).toBe(true);
+  it('a routine with a target but no stated cadence settles after a rep', () => {
+    // 3× a day over a 16h waking day → due again after ~5h20m. Without
+    // this the tile stayed lit the instant after logging, so the tap
+    // looked like it had done nothing.
+    const elbow = { elbow: routine({ label: 'Elbow', targetPerDay: 3, everyMinutes: 0 }) };
+    const justTapped = routineStatuses(elbow, { a: log('elbow', minutesAgo(5)) }, NOW)[0];
+    expect(justTapped.due).toBe(false);
+    expect(justTapped.minutesUntilDue).toBe(315);
+
+    const later = routineStatuses(elbow, { a: log('elbow', minutesAgo(330)) }, NOW)[0];
+    expect(later.due).toBe(true);
+    expect(later.minutesUntilDue).toBeNull();
+  });
+
+  it('a once-a-day routine has no cadence and stays due until done', () => {
+    const once = { x: routine({ targetPerDay: 1, everyMinutes: 0 }) };
+    expect(routineStatuses(once, { a: log('x', minutesAgo(5)) }, NOW)[0].complete).toBe(true);
+    expect(routineStatuses(once, {}, NOW)[0].due).toBe(true);
   });
 
   it('hides inactive routines and sorts by order', () => {
@@ -77,6 +89,14 @@ describe('routineStatuses', () => {
       NOW,
     );
     expect(list.map((s) => s.routine.label)).toEqual(['A', 'B']);
+  });
+});
+
+describe('effectiveCadence', () => {
+  it('prefers a stated cadence, otherwise spreads the target over the day', () => {
+    expect(effectiveCadence(routine({ everyMinutes: 90, targetPerDay: 8 }))).toBe(90);
+    expect(effectiveCadence(routine({ everyMinutes: 0, targetPerDay: 3 }))).toBe(320);
+    expect(effectiveCadence(routine({ everyMinutes: 0, targetPerDay: 1 }))).toBe(0);
   });
 });
 

@@ -90,6 +90,10 @@ export function RoutineChips() {
                       {s.doneToday}/{s.routine.targetPerDay} today ·{' '}
                       {sinceLabel(s.minutesSince)}
                       {s.due ? ' · due' : ''}
+                      {s.complete ? ' · done for today' : ''}
+                      {s.minutesUntilDue !== null
+                        ? ` · next in ${sinceLabel(s.minutesUntilDue).replace(' ago', '')}`
+                        : ''}
                     </span>
                   </span>
                   <span className="shrink-0 rounded-full bg-accent-strong px-4 py-2 text-sm font-semibold text-white">

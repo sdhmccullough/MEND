@@ -210,7 +210,15 @@ export function seedDemoStore(): void {
         'demo-rl1': { routineId: 'demo-r1', at: hoursAgo(2), by: 'demo-user' },
       },
     },
-    timers: {},
+    timers: {
+      'demo-r1': {
+        label: 'Ice 30 min',
+        startedAt: now - 12 * 60 * 1000,
+        dueAt: now + 18 * 60 * 1000,
+        notifiedAt: null,
+        by: 'demo-user',
+      },
+    },
     protocol: {
       'demo-p1': {
         label: 'Immobilization',

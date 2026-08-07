@@ -8,7 +8,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      // autoUpdate, not prompt: a dismissed or unnoticed update prompt left
+      // the phone running old code (a logged dose silently skipped its new
+      // timer). For a daily-use medical record, current beats controlled.
+      registerType: 'autoUpdate',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       manifest: {
         id: '/',

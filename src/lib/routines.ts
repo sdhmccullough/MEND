@@ -14,6 +14,20 @@ export interface RoutineStatus {
   /** Cadence elapsed (or never done) and the daily target isn't met. */
   due: boolean;
   complete: boolean;
+  /** Minutes until it's due again; null when due now or complete. */
+  minutesUntilDue: number | null;
+}
+
+/** Rough waking day, used to space routines that have a daily target but
+ * no stated cadence (3× a day → roughly every 5 hours). Without this a
+ * cadence-free routine reads "due" the instant after you log it, which
+ * makes the tap look like it did nothing. */
+const WAKING_MINUTES = 16 * 60;
+
+export function effectiveCadence(routine: Routine): number {
+  if (routine.everyMinutes > 0) return routine.everyMinutes;
+  if (routine.targetPerDay > 1) return Math.floor(WAKING_MINUTES / routine.targetPerDay);
+  return 0;
 }
 
 export function routineStatuses(
@@ -34,18 +48,22 @@ export function routineStatuses(
       const minutesSince = lastAt === null ? null : Math.floor((now - lastAt) / 60_000);
       const doneToday = mine.length;
       const complete = doneToday >= routine.targetPerDay;
+      const cadence = effectiveCadence(routine);
       const cadenceElapsed =
-        routine.everyMinutes === 0
-          ? true
-          : minutesSince === null || minutesSince >= routine.everyMinutes;
+        cadence === 0 ? true : minutesSince === null || minutesSince >= cadence;
+      const due = !complete && cadenceElapsed;
       return {
         id,
         routine,
         doneToday,
         lastAt,
         minutesSince,
-        due: !complete && cadenceElapsed,
+        due,
         complete,
+        minutesUntilDue:
+          due || complete || cadence === 0 || minutesSince === null
+            ? null
+            : cadence - minutesSince,
       };
     });
 }

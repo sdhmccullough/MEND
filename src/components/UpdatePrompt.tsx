@@ -1,28 +1,23 @@
+import { useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { Button } from './ui/Button';
 
+/** With registerType 'autoUpdate' the new worker installs itself; this
+ * just applies it immediately and checks hourly, so a phone left open for
+ * days can't drift onto stale code. No prompt to miss or dismiss. */
 export function UpdatePrompt() {
   const {
-    needRefresh: [needRefresh, setNeedRefresh],
+    needRefresh: [needRefresh],
     updateServiceWorker,
-  } = useRegisterSW();
+  } = useRegisterSW({
+    onRegisteredSW(_url, registration) {
+      if (!registration) return;
+      setInterval(() => void registration.update(), 60 * 60 * 1000);
+    },
+  });
 
-  if (!needRefresh) return null;
+  useEffect(() => {
+    if (needRefresh) void updateServiceWorker(true);
+  }, [needRefresh, updateServiceWorker]);
 
-  return (
-    <div
-      role="alert"
-      className="fixed bottom-20 left-1/2 z-[70] flex w-[min(92vw,22rem)] -translate-x-1/2 items-center justify-between gap-3 rounded-(--radius-card) border border-line bg-surface p-3 shadow-xl"
-    >
-      <span className="text-sm font-medium">Update available</span>
-      <div className="flex gap-2">
-        <Button variant="ghost" onClick={() => setNeedRefresh(false)}>
-          Later
-        </Button>
-        <Button variant="primary" onClick={() => void updateServiceWorker(true)}>
-          Refresh
-        </Button>
-      </div>
-    </div>
-  );
+  return null;
 }
